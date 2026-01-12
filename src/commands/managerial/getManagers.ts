@@ -62,61 +62,71 @@ export default class ViewHistoryCommand extends Command {
   }
 
   public async chatInputRun(interaction: ChatInputCommandInteraction) {
+    Sentry.logger.info("Invoked get-managers command", {
+      "user.id": interaction.user?.id,
+      "channel.id": interaction.channelId,
+      "guild.id": interaction.guildId,
+    });
+
     await interaction.deferReply({ flags: ["Ephemeral"], });
+    Sentry.logger.info("Deferred reply (ephemeral)");
 
     const district = interaction.options.getString("district", true);
+    Sentry.logger.info("District option parsed", { district });
 
     return SentryHelper.tracer(interaction, {
       name: "Get Managers Command",
       op: "command.getManagers",
     }, async (span: any) => {
-      try {
-        span.setAttribute("district.name", district);
-        let managers: string[];
+      span.setAttribute("district.name", district);
+
+      const managers: string[] | null = await Sentry.startSpan({
+        name: "Fetch Managers from Database",
+        op: "db.prisma.getManagers",
+      }, async (childSpan) => {
+        Sentry.logger.info("Fetching managers from database", { district });
+
         try {
-          managers = await GetManagersFromDistrict(district, span);
-        } catch (err) {
-          span.setStatus("error");
-          span.setAttribute("error.message", (err as Error).message);
-
-          console.error("Error fetching district managers:", err);
-          managers = ["An error occurred while fetching the moderation history."];
+          const districtManagers = await GetManagersFromDistrict(district, span);
+          childSpan.setStatus({ code: 1 });
+          Sentry.logger.info("Fetched managers from DB", { district, count: Array.isArray(districtManagers) ? districtManagers.length : 0 });
+          return districtManagers;
         }
+        catch (error) {
+          childSpan.setStatus({ code: 2, message: "internal_error" });
+          span.setStatus({ code: 2, message: "internal_error" });
+          span.setAttribute("error.message", (error as Error).message);
+          Sentry.captureException(error);
 
-        span.setAttribute("district.managers.list", managers.join(", "));
-        span.setAttribute("district.managers.count", managers.length);
-
-        const newEmbed: EmbedBuilder = new EmbedBuilder()
-          .setColor(global.embeds.embedColors.mgmt)
-          .setTitle(`${district} Managers`)
-          .setTimestamp()
-          .setFooter(global.embeds.embedFooter)
-          .setDescription(managers.join("\n"));
-
-        span.setAttribute("command.status", "success");
-
-        await interaction.editReply({
-          embeds: [newEmbed]
-        });
-
-        span.end();
-      } catch (error) {
-        span.setStatus("error");
-        span.setAttribute("error.message", (error as Error).message);
-        span.setAttribute("command.status", "error");
-        Sentry.captureException(error);
-
-        if (interaction.deferred || interaction.replied) {
-          return interaction.editReply({
-            content: "An unexpected error occurred while processing your request.",
-            embeds: []
+          await interaction.editReply({
+            content: "An error occurred while fetching the managers for the specified district.",
           });
-        } else {
-          return interaction.reply({
-            content: "An unexpected error occurred while processing your request.",
-          });
+
+          return null
         }
+      });
+
+      if (managers === null) {
+        span.setAttribute("command.status", "failed_database_fetch");
+        Sentry.logger.info("Command failed: database fetch returned null", { district });
+        return;
       }
+
+      span.setAttribute("district.managers.list", managers.join(", "));
+      span.setAttribute("district.managers.count", managers.length);
+
+      const newEmbed: EmbedBuilder = new EmbedBuilder()
+        .setColor(global.embeds.embedColors.mgmt)
+        .setTitle(`${district} Managers`)
+        .setTimestamp()
+        .setFooter(global.embeds.embedFooter)
+        .setDescription(managers.join("\n"));
+
+      span.setAttribute("command.status", "success");
+
+      return await interaction.editReply({
+        embeds: [newEmbed]
+      });
     });
   }
 }
