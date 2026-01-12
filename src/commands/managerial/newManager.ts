@@ -6,7 +6,7 @@ import {
 import { ApplyOptions } from "@sapphire/decorators";
 import { databaseConnection } from "../../database";
 import { SentryHelper } from "../../shared/sentry-utils";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 const connection = new databaseConnection();
 

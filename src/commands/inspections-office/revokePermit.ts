@@ -10,6 +10,7 @@ import {
 	type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
+import Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
 	name: "revoke-permit",
@@ -114,6 +115,16 @@ export default class ViewHistoryCommand extends Command {
 			.setFooter(global.embeds.embedFooter);
 
 		blmChannel.send({ embeds: [logEmbed] });
+
+		Sentry.metrics.count("inspections.permits.revoked", 1, {
+			attributes: {
+				"inspector.id": interaction.user.id,
+				"inspector.tag": interaction.user.tag,
+
+				"recipient.id": member.user.id,
+				"recipient.tag": member.user.tag
+			}
+		});
 
 		return interaction.editReply({ content: `Message sent to ${member.user.tag} successfully!` });
 	}

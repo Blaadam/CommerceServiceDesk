@@ -1,7 +1,7 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import { type ChatInputCommandInteraction } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
 	name: "ping",

@@ -1,6 +1,6 @@
 import Client from "./client";
 import 'dotenv/config'
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 import { databaseConnection } from "./database";
 const connection = new databaseConnection();

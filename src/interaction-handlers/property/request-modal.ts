@@ -11,7 +11,7 @@ import {
 	type ModalSubmitInteraction,
 } from "discord.js";
 import axios from "axios";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 import { databaseConnection } from "../../database";
 import { ApplyOptions } from "@sapphire/decorators";
@@ -325,6 +325,14 @@ export class ModalHandler extends InteractionHandler {
 				if (!NewCard) {
 					return;
 				}
+
+				Sentry.metrics.count("property.request.submission", 1, {
+					attributes: {
+						"user.id": interaction.user.id,
+						"user.tag": interaction.user.tag,
+						"property.district": District,
+					}
+				});
 
 				span.setAttribute("trello.new_card_id", NewCard.id);
 				span.setAttribute("trello.new_card_url", NewCard.shortUrl);

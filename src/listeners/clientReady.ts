@@ -1,6 +1,6 @@
 import { Listener } from "@sapphire/framework";
 import { ActivityType, type Client } from "discord.js";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
 

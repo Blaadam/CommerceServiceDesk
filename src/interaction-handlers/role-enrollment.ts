@@ -1,6 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import type { ButtonInteraction, Guild, GuildMember, Role } from 'discord.js';
+import Sentry from "@sentry/node";
 
 @ApplyOptions({
     name: "role-enrollment",
@@ -35,11 +36,33 @@ export class ButtonHandler extends InteractionHandler {
         const userHasRole = member.roles.cache.some(role => role.name === roleName)
 
         if (userHasRole) {
-            member.roles.remove(role);
+            await member.roles.remove(role);
+
+            Sentry.metrics.count("role_enrollment.removals", 1, {
+                attributes: {
+                    "role.name": roleName,
+                    "guild.id": guild.id,
+                    "guild.name": guild.name,
+                    "user.id": interaction.user.id,
+                    "user.tag": interaction.user.tag
+                }
+            });
+
             return interaction.reply({ content: `Your role for \"${roleName}\" has been removed.`, flags: ["Ephemeral"], })
         }
 
-        member.roles.add(role);
+        await member.roles.add(role);
+
+        Sentry.metrics.count("role_enrollment.additions", 1, {
+            attributes: {
+                "role.name": roleName,
+                "guild.id": guild.id,
+                "guild.name": guild.name,
+                "user.id": interaction.user.id,
+                "user.tag": interaction.user.tag
+            }
+        });
+
         return interaction.reply({ content: `Your role for \"${roleName}\" has been added.`, flags: ["Ephemeral"], })
     }
 }

@@ -12,7 +12,7 @@ import {
 	type ModalSubmitInteraction,
 } from "discord.js";
 import axios from "axios";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 import { databaseConnection } from "../../database";
 import { ApplyOptions } from "@sapphire/decorators";
@@ -233,6 +233,14 @@ export class ModalHandler extends InteractionHandler {
 
 					childSpan.setStatus({ code: 2 });
 					Sentry.captureException(err);
+				}
+			});
+
+			Sentry.metrics.count("property.activity.submission", 1, {
+				attributes: {
+					"user.id": interaction.user.id,
+					"user.tag": interaction.user.tag,
+					"property.district": District,
 				}
 			});
 

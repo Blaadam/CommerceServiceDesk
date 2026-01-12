@@ -124,6 +124,16 @@ export class ModalHandler extends InteractionHandler {
                     embeds: [newEmbed],
                 });
 
+                Sentry.metrics.count("property.development.request.approved", 1, {
+                    attributes: {
+                        "developer.id": interaction.user.id,
+                        "developer.tag": interaction.user.tag,
+
+                        "submitter.id": submitter.id,
+                        "submitter.tag": submitter.tag,
+                    }
+                });
+
                 return interaction.editReply({
                     content: `You have approved the property submission for ${landPermit}.`,
                 });

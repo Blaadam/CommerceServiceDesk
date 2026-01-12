@@ -13,6 +13,7 @@ import {
     User,
     type ModalSubmitInteraction,
 } from "discord.js";
+import Sentry from "@sentry/node";
 
 import { ApplyOptions } from "@sapphire/decorators";
 
@@ -84,6 +85,16 @@ export class ModalHandler extends InteractionHandler {
             content: `This property submission has been declined by ${interaction.user.toString()}.`,
             components: [],
             embeds: [newEmbed],
+        });
+
+        Sentry.metrics.count("property.development.submission.declined", 1, {
+            attributes: {
+                "developer.id": interaction.user.id,
+                "developer.tag": interaction.user.tag,
+
+                "submitter.id": submitter.id,
+                "submitter.tag": submitter.tag,
+            }
         });
 
         return interaction.reply({

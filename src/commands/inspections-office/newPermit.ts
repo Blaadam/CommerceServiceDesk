@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils.js";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
 	name: "new-permit",
@@ -80,6 +80,16 @@ export default class ViewHistoryCommand extends Command {
 				if (!dmChannel) {
 					return interaction.editReply({ content: "Could not create DM channel." });
 				}
+
+				Sentry.metrics.count("inspections.permits.issued", 1, {
+					attributes: {
+						"inspector.id": interaction.user.id,
+						"inspector.tag": interaction.user.tag,
+						
+						"recipient.id": member.user.id,
+						"recipient.tag": member.user.tag
+					}
+				});
 
 				dmChannel.send(passMessage);
 				await interaction.editReply({ content: `Message sent to ${member.user.tag} successfully!` });

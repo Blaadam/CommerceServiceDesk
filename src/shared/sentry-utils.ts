@@ -1,5 +1,5 @@
 import { StartSpanOptions } from '@sentry/core';
-import * as Sentry from '@sentry/node';
+import Sentry from '@sentry/node';
 import type { Interaction, ModalSubmitInteraction, ChatInputCommandInteraction, ButtonInteraction, InteractionResponse, Message, RepliableInteraction } from 'discord.js';
 
 export class SentryHelper {

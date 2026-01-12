@@ -11,6 +11,7 @@ import {
     TextChannel,
     type ModalSubmitInteraction,
 } from "discord.js";
+import Sentry from "@sentry/node";
 
 import { ApplyOptions } from "@sapphire/decorators";
 
@@ -88,6 +89,13 @@ export class ModalHandler extends InteractionHandler {
             content: `New property request by: ${interaction.user.toString()}`,
             embeds: [embed],
             components: [actionRow],
+        });
+
+        Sentry.metrics.count("property.development.request.approved", 1, {
+            attributes: {
+                "submitter.id": interaction.user.id,
+                "submitter.tag": interaction.user.tag,
+            }
         });
 
         return interaction.reply({

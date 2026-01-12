@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
 	name: "land-deadline",

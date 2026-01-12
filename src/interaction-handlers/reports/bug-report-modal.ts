@@ -5,7 +5,7 @@ import {
 import {
     type ModalSubmitInteraction,
 } from "discord.js";
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 
 import { ApplyOptions } from "@sapphire/decorators";
 
@@ -47,6 +47,13 @@ export class ModalHandler extends InteractionHandler {
         Sentry.captureFeedback({
             name: `${bugTitle} - Bug Report`,
             message: `${bugDesc}\n\n${interaction.user.tag} (${interaction.user.id})`,
+        });
+
+        Sentry.metrics.count("bot.bug_report.submission", 1, {
+            attributes: {
+                "user.id": interaction.user.id,
+                "user.tag": interaction.user.tag,
+            }
         });
 
         return interaction.reply({

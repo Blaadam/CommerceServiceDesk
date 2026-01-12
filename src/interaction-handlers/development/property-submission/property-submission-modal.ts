@@ -12,6 +12,7 @@ import {
     type ModalSubmitInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
+import Sentry from "@sentry/node";
 
 const PERMITTED_EXTENSIONS = [".rbxm"];
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
@@ -111,6 +112,13 @@ export class ModalHandler extends InteractionHandler {
             embeds: [embed],
             components: [actionRow],
             files: [propertyFile.url],
+        });
+
+        Sentry.metrics.count("property.development.submission", 1, {
+            attributes: {
+                "submitter.id": interaction.user.id,
+                "submitter.tag": interaction.user.tag,
+            }
         });
 
         return interaction.reply({

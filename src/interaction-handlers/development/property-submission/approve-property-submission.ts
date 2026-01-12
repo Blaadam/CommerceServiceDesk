@@ -1,6 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { DMChannel, Embed, EmbedBuilder, User, type ButtonInteraction } from 'discord.js';
+import Sentry from '@sentry/node';
 
 @ApplyOptions({
   name: "approve-property-submission",
@@ -47,10 +48,21 @@ export class ButtonHandler extends InteractionHandler {
       embeds: [newEmbed],
     });
 
+    Sentry.metrics.count("property.development.submission.approved", 1, {
+      attributes: {
+
+
+        "developer.id": interaction.user.id,
+        "developer.tag": interaction.user.tag,
+
+        "submitter.id": submitter.id,
+        "submitter.tag": submitter.tag,
+      }
+    });
+
     return interaction.reply({
       content: `You have approved the property submission for ${landPermit}.`,
       flags: ["Ephemeral"],
     });
-
   }
 }
