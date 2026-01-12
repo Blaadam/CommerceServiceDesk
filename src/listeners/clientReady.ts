@@ -30,6 +30,6 @@ export class ClientReadyListener extends Listener {
 		}
 
 		updatePingLatencyMetric();
-		setInterval(updatePingLatencyMetric, 6_000);
+		setInterval(updatePingLatencyMetric, 15_000);
 	}
 }

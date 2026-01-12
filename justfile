@@ -24,4 +24,4 @@ docker-dev:
 
 docker-prod:
     npm run write-package-version
-    docker compose -f docker-compose.prod.yml up -d
+    docker compose -f docker-compose.prod.yml up -d --build
