@@ -7,7 +7,7 @@ import {
 	type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-import { SentryHelper } from "../../shared/sentry-utils.ts";
+import { SentryHelper } from "../../shared/sentry-utils.js";
 import * as Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({

@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { LabelBuilder, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, User, type ButtonInteraction } from 'discord.js';
 import { getUserIdFromString } from '../../../shared/useridFromString';
-import { SentryHelper } from '../../../shared/sentry-utils.ts';
+import { SentryHelper } from '../../../shared/sentry-utils';
 
 @ApplyOptions({
 	name: "decline-property-request",

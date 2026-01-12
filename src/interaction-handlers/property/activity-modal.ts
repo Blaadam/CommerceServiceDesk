@@ -17,7 +17,7 @@ import * as Sentry from "@sentry/node";
 
 import { databaseConnection } from "../../database";
 import { ApplyOptions } from "@sapphire/decorators";
-import { SentryHelper } from "../../shared/sentry-utils.ts";
+import { SentryHelper } from "../../shared/sentry-utils";
 const connection = new databaseConnection();
 
 const TRELLO_KEY = process.env.TRELLO_KEY;

@@ -9,7 +9,7 @@ import {
 	type ButtonInteraction
 } from 'discord.js';
 import { getUserIdFromString } from '../../../shared/useridFromString';
-import { SentryHelper } from '../../../shared/sentry-utils.ts';
+import { SentryHelper } from '../../../shared/sentry-utils';
 
 @ApplyOptions({
 	name: "approve-property-request",

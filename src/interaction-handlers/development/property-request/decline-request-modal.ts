@@ -16,7 +16,7 @@ import {
 
 import { ApplyOptions } from "@sapphire/decorators";
 import { getUserIdFromString } from "../../../shared/useridFromString";
-import { SentryHelper } from "../../../shared/sentry-utils.ts";
+import { SentryHelper } from "../../../shared/sentry-utils";
 
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
