@@ -7,6 +7,7 @@ import { ApplyOptions } from "@sapphire/decorators";
 
 import { databaseConnection } from "../../database";
 import * as Sentry from "@sentry/node";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
 const connection = new databaseConnection();
 
 async function GetManagersFromDistrict(district: string, span?: any) {
@@ -65,7 +66,7 @@ export default class ViewHistoryCommand extends Command {
 
     const district = interaction.options.getString("district", true);
 
-    Sentry.startSpan({
+    return SentryHelper.tracer(interaction, {
       name: "Get Managers Command",
       op: "command.getManagers",
     }, async (span: any) => {

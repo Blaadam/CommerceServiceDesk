@@ -30,13 +30,13 @@ export class ClientReadyListener extends Listener {
     }
 
     const flushSentry = () => {
-      Sentry.flush();
+      // Sentry.flush();
     }
 
     updatePingLatencyMetric();
-    setInterval(updatePingLatencyMetric, 1_000);
+    setInterval(updatePingLatencyMetric, 6_000);
 
-    setInterval(flushSentry, NODE_ENV === "development" ? 10_000 : 60_000);
+    // setInterval(flushSentry, NODE_ENV === "development" ? 30_000 : 60_000);
 
   }
 }

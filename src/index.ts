@@ -1,6 +1,6 @@
+// import "./instrument"
 import Client from "./client";
-require("dotenv").config();
-require("./instrument");
+import 'dotenv/config'
 import * as Sentry from "@sentry/node";
 
 import { databaseConnection } from "./database";

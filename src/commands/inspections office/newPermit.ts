@@ -5,6 +5,7 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
 const Sentry = require("@sentry/node");
 
 @ApplyOptions<Command.Options>({
@@ -35,7 +36,7 @@ export default class ViewHistoryCommand extends Command {
   public async chatInputRun(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: ["Ephemeral"] });
 
-    Sentry.startSpan({
+    return SentryHelper.tracer(interaction, {
       name: "New Permit Command",
       op: "command.newPermit",
     }, async (span: any) => {

@@ -12,10 +12,11 @@ import {
 } from "discord.js";
 import "dotenv";
 import axios from "axios";
-require("dotenv").config();
+import * as Sentry from "@sentry/node";
 
 import { databaseConnection } from "../../database";
 import { ApplyOptions } from "@sapphire/decorators";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
 const connection = new databaseConnection();
 
 const TRELLO_KEY = process.env.TRELLO_KEY;
@@ -39,15 +40,19 @@ async function CommentOnTrelloCardID(cardId: string, comment: string) {
     return response.data
 }
 
-async function FindTrelloCardFromName(query: string) {
-    var url = `https://api.trello.com/1/search${ADDON}`
+async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
+    const url = "https://api.trello.com/1/search"
+    const idBoards = ["641e058f71db0c8ed6abecd7"]
 
-    let response = await axios({
+    span?.setAttribute("trello.search_url", url);
+    span?.setAttribute("trello.search_boards", idBoards.join(","));
+
+    const response = await axios({
         "method": 'get',
-        "url": url,
+        "url": url + ADDON,
         params: {
             query: query,
-            idBoards: ["641e058f71db0c8ed6abecd7"],
+            idBoards: idBoards,
             modelTypes: "cards",
             card_fields: "name,shortUrl,closed,idList",
             cards_limit: 5
@@ -61,7 +66,7 @@ async function FindTrelloCardFromName(query: string) {
     var card
     for (let i = 0; i < response.data.cards.length; i++) {
         if (response.data.cards[i].idList == ACTIVE_LIST_ID && !response.data.cards[i].closed) {
-           card = response.data.cards[i]
+            card = response.data.cards[i]
             break;
         }
     }
@@ -103,102 +108,173 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
+        await interaction.deferReply({ flags: ["Ephemeral"] });
+
         const businessName = interaction.fields.getTextInputValue("businessName");
         const propertyDistrict = interaction.fields.getStringSelectValues("propertyDistrict");
         const propertyActivity = interaction.fields.getTextInputValue("propertyActivity");
         const additionalInformation = interaction.fields.getTextInputValue("additionalInformation");
 
-        if (!businessName || !propertyDistrict || !propertyActivity || !additionalInformation) {
-            return interaction.reply({
-                content: "You did not fill in the fields correctly.",
-                flags: ["Ephemeral"],
+        return SentryHelper.tracer(interaction, {
+            name: "Property Activity Modal Submission",
+            op: "property.activity_modal",
+            attributes: { "modal.custom_id": interaction.customId }
+        }, async (span) => {
+            SentryHelper.logInteraction(interaction, false, span)
+            // Sentry.logger.info(`Processing activity submission modal from ${interaction.user.tag}`);
+
+            span.setAttribute("user.id", interaction.user.id);
+            span.setAttribute("user.tag", interaction.user.tag);
+            span.setAttribute("business.name", businessName);
+
+            if (!businessName || !propertyDistrict || !propertyActivity) {
+                Sentry.logger.info("Validation failed: missing required fields", { businessName, propertyDistrict, propertyActivity });
+                span.setStatus({ code: 2, message: "missing_fields" });
+                return interaction.editReply({
+                    content: "Required fields are missing."
+                });
+            }
+
+            const robloxName = SpliceUsername(interaction.user.displayName);
+            span.setAttribute("user.roblox_name", robloxName);
+            Sentry.logger.info(`Derived roblox name: ${robloxName}`);
+
+            const District = propertyDistrict[0]; // Assuming string from modal
+            span.setAttribute("property.district", District);
+            Sentry.logger.info(`Selected district: ${District}`);
+
+            if (!District) {
+                Sentry.logger.info("Invalid district provided", { District });
+                span.setStatus({ code: 2, message: "invalid_district" });
+                return interaction.editReply({
+                    content: `The district \`\`${District}\`\` is not valid. Please use one of the following districts: \`Redwood\`, \`Arborfield\`, \`Prominence\`, or \`Unincorporated\`.`,
+                });
+            }
+
+            Sentry.logger.info("Fetching district managers", { District });
+            const DistrictManagers = await Sentry.startSpan({
+                name: "Get District Managers",
+                op: "db.prisma"
+            }, async (childSpan) => {
+                try {
+                    const managers = await GetManagersFromDistrict(District);
+                    childSpan.setStatus({ code: 1 });
+                    Sentry.logger.info("Fetched district managers", { count: managers?.length ?? 0 });
+                    return managers;
+                } catch (err) {
+                    Sentry.logger.info("Error fetching district managers", { message: (err as Error).message });
+                    span.setStatus({ code: 2, message: "db_error" });
+                    span.setAttribute("error.message", (err as Error).message);
+
+                    childSpan.setStatus({ code: 2 });
+                    Sentry.captureException(err);
+                    return null;
+                }
             });
-        }
 
-        const robloxName = SpliceUsername(interaction.user.displayName)
-        const District = propertyDistrict[0]
+            if (!DistrictManagers?.length) {
+                Sentry.logger.info("No district managers found", { District });
+                span.setAttribute("command.status_reason", "no_managers_found");
+                return interaction.editReply({
+                    content: `Unable to find district manager for ${District}.`
+                });
+            }
 
-        if (!District) {
-            return interaction.reply({
-                content: `The district \`\`${District}\`\` is not valid. Please use one of the following districts: \`Redwood\`, \`Arborfield\`, \`Prominence\`, or \`Unincorporated\`.`,
-                flags: ["Ephemeral"],
+            const query = `${District} ${businessName}`;
+            span.setAttribute("trello.search_query", query);
+            Sentry.logger.info("Searching Trello for card", { query });
+
+            const ExistingCard = await Sentry.startSpan({
+                name: "Trello: Find Card by Name",
+                op: "axios.trello.search",
+                attributes: { "trello.query": query }
+            }, async (childSpan) => {
+                const card = await FindTrelloCardFromName(query, childSpan);
+                childSpan.setStatus({ code: card ? 1 : 2 });
+                Sentry.logger.info(card ? "Trello card found" : "Trello card not found", { cardId: card?.id, query });
+                return card;
             });
-        }
 
-        // Grab the information of the property
-        const DistrictManagers = await GetManagersFromDistrict(District)
+            if (!ExistingCard) {
+                Sentry.logger.info("No Trello card matched search query", { query });
+                span.setAttribute("command.status_reason", "no_trello_card_found");
+                return interaction.editReply({
+                    content: `Unable to find a Trello card with the query \`\`${query}\`\`. Please ensure the business name is correct.`,
+                });
+            }
 
-        if (!DistrictManagers) {
-            return interaction.reply({
-                content: `Unable to find district manager for \`\`${District}\`\`.\nContact [Nøyra](https://discord.gg/5SdTjEKCdM).`,
-                flags: ["Ephemeral"],
+            span.setAttribute("trello.short_url", ExistingCard.shortUrl);
+            Sentry.logger.info("Adding comment to Trello card", { cardId: ExistingCard.id, shortUrl: ExistingCard.shortUrl });
+
+            await Sentry.startSpan({
+                name: "Trello: Add Activity Comment",
+                op: "axios.trello.comment",
+                attributes: { "trello.card_id": ExistingCard.id }
+            }, async (childSpan) => {
+                try {
+                    const currentTime = new Date();
+                    await CommentOnTrelloCardID(ExistingCard.id,
+                        `##Land Activity
+
+**Submitted at**: ${currentTime.toUTCString()}
+**Submitter**: ${robloxName}
+
+**Property District**: ${District}
+**Property Activity**: ${propertyActivity}
+
+**Additional Information**: ${additionalInformation}`
+                    );
+                    childSpan.setStatus({ code: 1 });
+                    Sentry.logger.info("Successfully added comment to Trello card", { cardId: ExistingCard.id });
+                }
+                catch (err) {
+                    Sentry.logger.info("Failed to add comment to Trello card", { message: (err as Error).message, cardId: ExistingCard.id });
+                    span.setStatus({ code: 2, message: "trello_comment_error" });
+                    span.setAttribute("error.message", (err as Error).message);
+
+                    childSpan.setStatus({ code: 2 });
+                    Sentry.captureException(err);
+                }
             });
-        }
 
-        var DistrictManager = ""
+            // Prepare embed and notification
+            Sentry.logger.info("Preparing embed and notification message");
+            const newEmbed = new EmbedBuilder()
+                .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
+                .setTitle("New Property Activity Submission")
+                .addFields(
+                    { name: "Business", value: businessName, inline: true },
+                    { name: "Roblox Name", value: robloxName, inline: true },
+                    { name: "District", value: District, inline: true },
+                    { name: "Trello Card", value: `[Link](${ExistingCard.shortUrl})` }
+                )
+                .setTimestamp()
+                .setColor(global.embeds.embedColors.activity)
+                .setFooter(global.embeds.embedFooter);
 
-        for (let row in DistrictManagers) {
-            DistrictManager += `<@${DistrictManagers[row].DiscordId}> `
-        }
+            const incomingRequestButton = new ButtonBuilder()
+                .setLabel("Property Card")
+                .setURL(ExistingCard.shortUrl)
+                .setStyle(ButtonStyle.Link);
 
-        const query = `${District} ${businessName}`
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
 
-        // Get the current card
-        var ExistingCard = await FindTrelloCardFromName(query)
-        if (!ExistingCard) {
-            return interaction.reply({
-                content: `Unable to find a Trello card with the query \`\`${query}\`\`. Please ensure the business name is correct.`,
-                flags: ["Ephemeral"],
+            Sentry.logger.info("Fetching notification channel", { channelId: global.ChannelIDs.landSubmissions });
+            const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
+            if (channel) {
+                const mentions = DistrictManagers.map(m => `<@${m.DiscordId}>`).join(" ");
+                Sentry.logger.info("Sending notification to channel", { channelId: channel.id, mentionsCount: DistrictManagers.length });
+                await channel.send({ content: mentions, embeds: [newEmbed], components: [row] });
+                Sentry.logger.info("Notification sent to channel", { channelId: channel.id });
+            } else {
+                Sentry.logger.info("Notification channel not found", { channelId: global.ChannelIDs.landSubmissions });
+            }
+
+            span.setStatus({ code: 1 });
+            Sentry.logger.info("Property activity modal processing complete", { user: interaction.user.tag, cardUrl: ExistingCard.shortUrl });
+            return interaction.editReply({
+                content: `Success! Activity added to [Trello Card](${ExistingCard.shortUrl}).`
             });
-        }
-
-        // Comment on the existing card
-        var currentTime = new Date();
-        await CommentOnTrelloCardID(ExistingCard.id,
-            "##Land Activity\n\n" +
-
-            `**Submitted at**: ${currentTime.toUTCString()}\n` +
-            `**Submitter**: ${robloxName}\n\n` +
-
-            `**Property District**: ${District}\n` +
-            `**Property Activity**: ${propertyActivity}\n\n` +
-
-            `**Additional Information**: ${additionalInformation}`
-        );
-
-        // Make an embed for content data
-        const newEmbed = new EmbedBuilder()
-            .setAuthor({
-                name: interaction.user.tag,
-                iconURL:
-                    interaction.user.displayAvatarURL({ extension: "png", size: 512 }),
-            })
-            .setTitle("New Property Activity Submission")
-            .addFields(
-                { name: "Business", value: businessName },
-                { name: "Roblox Name", value: robloxName },
-                { name: "Property District", value: District },
-                { name: "Property Link", value: ExistingCard.shortUrl },
-            )
-            .setTimestamp()
-            .setColor(global.embeds.embedColors.activity)
-            .setFooter(global.embeds.embedFooter);
-
-        const incomingRequestButton = new ButtonBuilder()
-            .setLabel("Property Card")
-            .setURL(ExistingCard.shortUrl)
-            .setStyle(ButtonStyle.Link);
-
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
-
-        const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
-        if (channel) {
-            channel.send({ content: DistrictManager, embeds: [newEmbed], components: [row] });
-        }
-
-        return interaction.reply({
-            content: `Your submission was received successfully and has been added to the existing Trello card. Check the card [here](${ExistingCard.shortUrl}).`,
-            flags: ["Ephemeral"],
         });
     }
 }

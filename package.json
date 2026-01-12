@@ -17,6 +17,7 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
+    "write-package-version": "echo \"export const version = \\\"${npm_package_version}\\\";\" > src/version.ts",
     "start": "bin dist/index.js",
     "dev": "nodemon src/index.ts",
     "build": "tsc"

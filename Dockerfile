@@ -13,4 +13,4 @@ RUN if npm run build --silent 2>/dev/null; then echo "ts build ran"; else echo "
 
 EXPOSE 3000
 
-CMD ["node", "bin/index.js"]
+CMD ["node","--import","./bin/instrument.js","bin/index.js"]

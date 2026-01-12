@@ -19,7 +19,9 @@ cleanrun:
     node .
 
 docker-dev:
+    npm run write-package-version
     docker compose -f docker-compose.dev.yml up --build
 
 docker-prod:
+    npm run write-package-version
     docker compose -f docker-compose.prod.yml up -d

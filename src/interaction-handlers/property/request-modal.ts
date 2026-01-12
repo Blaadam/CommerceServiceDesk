@@ -13,10 +13,10 @@ import {
 import "dotenv";
 import axios from "axios";
 import * as Sentry from "@sentry/node";
-require("dotenv").config();
 
 import { databaseConnection } from "../../database";
 import { ApplyOptions } from "@sapphire/decorators";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
 const connection = new databaseConnection();
 
 const TRELLO_KEY = process.env.TRELLO_KEY;
@@ -123,9 +123,12 @@ export class ModalHandler extends InteractionHandler {
     const requestedLand = interaction.fields.getTextInputValue("requestedLand");
     const propertyUse = interaction.fields.getTextInputValue("propertyUse");
 
-    Sentry.startSpan({
+    return SentryHelper.tracer(interaction, {
       name: "Property Request Modal Submission",
       op: "property.request_modal",
+      attributes: {
+        "modal.custom_id": interaction.customId,
+      },
     }, async (span) => {
       try {
         span.setAttribute("user.id", interaction.user.id);
@@ -137,6 +140,7 @@ export class ModalHandler extends InteractionHandler {
         if (!businessPermit || !businessGroup || !propertiesBefore || !requestedLand || !propertyUse) {
           span.setAttribute("command.status", "failed");
           span.setAttribute("command.status_reason", "missing_fields");
+          span.setStatus({ code: 2, message: "missing_fields" });
 
           return interaction.reply({
             content: "You did not fill in the field correctly.",
@@ -149,7 +153,7 @@ export class ModalHandler extends InteractionHandler {
 
         span.setAttribute("property.requested_land_url", requestedLand);
 
-        if (!requestedLand.search("trello.com/c/")) {
+        if (!requestedLand.includes("trello.com/c/")) {
           span.setAttribute("command.status", "failed");
           span.setAttribute("command.status_reason", "invalid_trello_link");
 
@@ -161,7 +165,7 @@ export class ModalHandler extends InteractionHandler {
 
         span.setAttribute("trello.card_url", requestedLand);
 
-        let CardTitle = requestedLand.split("/c/")
+        const CardTitle = requestedLand.split("/c/")
 
         if (!CardTitle[1]) {
           return interaction.reply({
@@ -170,31 +174,49 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        var CardID = CardTitle[1].split("/")[0]
+        const CardID = CardTitle[1].split("/")[0]
         span.setAttribute("trello.card_id", CardID);
 
-        var response;
-        try {
-          response = await axios({
-            method: "get",
-            url: `https://trello.com/1/cards/${CardID}/`,
-            headers: {
-              "Accept": "application/json"
-            }
-          })
-        }
-        catch (error) {
-          span.setAttribute("command.status", "failed");
-          span.setAttribute("command.status_reason", "trello_card_fetch_failed");
-          Sentry.captureException(error);
+        const card_url = `https://api.trello.com/1/cards/${CardID}`
 
-          return interaction.reply({
-            content: "Unable to fetch Trello card.\nPlease use the bug report command if the issue persists.",
-            flags: ["Ephemeral"],
-          });
-        }
+        // Fetch Trello Card Data
+        const response = await Sentry.startSpan({
+          name: "Fetch Trello Card Data",
+          op: "axios.trello.fetch_trello_card",
+          attributes: {
+            "trello.card_url": card_url,
+          },
+        }, async (childSpan) => {
+          try {
+            const res = await axios({
+              method: "get",
+              url: card_url + ADDON,
+              headers: {
+                "Accept": "application/json"
+              }
+            });
 
-        if (!response || !response.data || !response.data.idList) {
+            childSpan.setStatus({ code: 1 });
+            return res;
+          }
+          catch (error) {
+            childSpan.setStatus({ code: 2, message: "trello_card_fetch_failed" });
+
+            span.setAttribute("command.status", "failed");
+            span.setAttribute("command.status_reason", "trello_card_fetch_failed");
+
+            Sentry.captureException(error);
+
+            await interaction.reply({
+              content: "Unable to fetch Trello card.\nPlease use the bug report command if the issue persists.",
+              flags: ["Ephemeral"],
+            });
+
+            return null;
+          }
+        })
+
+        if (!response?.data?.idList) {
           span.setAttribute("command.status", "failed");
           span.setAttribute("command.status_reason", "invalid_trello_response");
 
@@ -217,19 +239,27 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        var DistrictManagers = []
-        try {
-          DistrictManagers = await GetManagersFromDistrict(District);
-        } catch (error) {
-          span.setAttribute("command.status", "failed");
-          span.setAttribute("command.status_reason", "district_managers_fetch_failed");
-          Sentry.captureException(error);
+        const DistrictManagers = await Sentry.startSpan(
+          { name: "Get District Managers", op: "db.prisma" },
+          async (childSpan) => {
+            try {
+              const managers = await GetManagersFromDistrict(District);
+              childSpan.setStatus({ code: 1 });
+              return managers;
+            } catch (error) {
+              span.setAttribute("command.status", "failed");
+              span.setStatus({ code: 2, message: "district_managers_fetch_failed" });
+              Sentry.captureException(error);
 
-          return interaction.reply({
-            content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
-            flags: ["Ephemeral"],
-          });
-        }
+              await interaction.reply({
+                content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
+                flags: ["Ephemeral"],
+              });
+
+              return null;
+            }
+          }
+        );
 
         span.setAttribute("district.managers.count", DistrictManagers.length);
 
@@ -251,23 +281,53 @@ export class ModalHandler extends InteractionHandler {
 
         span.setAttribute("district.managers.discords", DistrictManager_DiscordOutput);
 
-        var DateS = new Date()
-        var NewCard = await PublishCard(robloxName,
-          "#Land Request\n\n" +
-          "---\n\n" +
-          `**Submitted at**: ${DateS.toUTCString()}\n` +
-          `**Submitter**: ${robloxName}\n` +
-          `**Property District**: ${District}\n` +
-          `**Property Number**: ${propertiesBefore}\n\n` +
-          "---\n\n" +
-          `**Business Permit**: ${businessPermit}\n` +
-          `**Business Group**: ${businessGroup}\n` +
-          `**Requested Property**: ${requestedLand}\n\n` +
-          "---\n\n" +
-          `**Property Use**: ${propertyUse}`,
-          Settings.LabelIds[District],
-          DistrictManagers.map((manager) => manager.TrelloId) || null
-        )
+        const DateS = new Date()
+
+        const NewCard = await Sentry.startSpan({
+          name: "Publish Trello Card",
+          op: "property.publish_trello_card",
+        }, async (childSpan) => {
+          try {
+            var publishedCard = await PublishCard(robloxName,
+              "#Land Request\n\n" +
+              "---\n\n" +
+              `**Submitted at**: ${DateS.toUTCString()}\n` +
+              `**Submitter**: ${robloxName}\n` +
+              `**Property District**: ${District}\n` +
+              `**Property Number**: ${propertiesBefore}\n\n` +
+              "---\n\n" +
+              `**Business Permit**: ${businessPermit}\n` +
+              `**Business Group**: ${businessGroup}\n` +
+              `**Requested Property**: ${requestedLand}\n\n` +
+              "---\n\n" +
+              `**Property Use**: ${propertyUse}`,
+              Settings.LabelIds[District],
+              DistrictManagers.map((manager) => manager.TrelloId) || null
+            )
+
+            childSpan.setStatus({ code: 1 });
+            return publishedCard;
+          }
+          catch (error) {
+            childSpan.setStatus({ code: 2, message: "trello_card_publish_failed" });
+
+            span.setAttribute("command.status", "failed");
+            span.setAttribute("command.status_reason", "trello_card_publish_failed");
+
+            Sentry.captureException(error);
+
+            await interaction.reply({
+              content: "There was an error while processing your request.",
+              flags: ["Ephemeral"],
+            });
+
+            return null;
+          }
+        });
+
+        if (!NewCard) {
+          return;
+        }
 
         span.setAttribute("trello.new_card_id", NewCard.id);
         span.setAttribute("trello.new_card_url", NewCard.shortUrl);
@@ -300,6 +360,7 @@ export class ModalHandler extends InteractionHandler {
 
         const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
         if (!channel) {
+          span.setStatus({ code: 2, message: "land_submissions_channel_not_found" });
           span.setAttribute("command.status", "failed");
           span.setAttribute("command.status_reason", "land_submissions_channel_not_found");
 
@@ -319,10 +380,12 @@ export class ModalHandler extends InteractionHandler {
           flags: ["Ephemeral"],
         });
 
+        span.setStatus({ code: 1 });
         span.end();
       }
       catch (error) {
         span.setAttribute("command.status", "error");
+        span.setStatus({ code: 2, message: "unhandled_exception" });
         Sentry.captureException(error);
 
         return interaction.reply({
