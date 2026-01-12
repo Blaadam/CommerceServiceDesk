@@ -11,8 +11,6 @@ import {
     TextChannel,
     type ModalSubmitInteraction,
 } from "discord.js";
-import "dotenv";
-require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 

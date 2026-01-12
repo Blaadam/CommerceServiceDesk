@@ -101,7 +101,7 @@ export class ModalHandler extends InteractionHandler {
         );
 
         const channel: Channel | undefined = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
-        
+
         if (!channel || !(channel instanceof TextChannel)) {
             return interaction.reply({
                 content: `There was an error with your submission. Please use the bug report command if this issue persists.\nError: NO_CHANNEL_FOUND`,

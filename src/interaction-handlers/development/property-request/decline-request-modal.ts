@@ -12,8 +12,6 @@ import {
     User,
     type ModalSubmitInteraction,
 } from "discord.js";
-import "dotenv";
-require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 import { getUserIdFromString } from "../../../shared/useridFromString";
@@ -70,7 +68,7 @@ export class ModalHandler extends InteractionHandler {
             await interaction.editReply({ content: "Could not create DM channel with the submitter." });
             return;
         }
-        
+
         await dmChannel.send({
             content: `Your property request has been declined by ${interaction.user.toString()} for the following reason:\n\n${declineReason}`,
             embeds: [embed],

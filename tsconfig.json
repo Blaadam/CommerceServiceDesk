@@ -1,32 +1,38 @@
 {
-  "compilerOptions": {
-    "module": "Node18",
-    "target": "ES2023",
-    "outDir": "bin",
-    "lib": [
-      "ESNext",
-      "ESNext.Array",
-      "ESNext.AsyncIterable",
-      "ESNext.Intl",
-      "ESNext.Symbol",
-      "DOM"
-    ],
-    "sourceMap": true,
-    "inlineSources": true,
-    "incremental": true,
-    "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-  },
-  "watchOptions": {
-    "watchFile": "useFsEvents",
-    "watchDirectory": "useFsEvents",
-    "fallbackPolling": "dynamicPriority",
-    
-    "excludeDirectories": ["**/node_modules", "_build"],
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+	"compilerOptions": {
+		"module": "Node18",
+		"target": "ES2023",
+		"outDir": "bin",
+		"lib": [
+			"ESNext",
+			"ESNext.Array",
+			"ESNext.AsyncIterable",
+			"ESNext.Intl",
+			"ESNext.Symbol",
+			"DOM"
+		],
+		"sourceMap": true,
+		"inlineSources": true,
+		"incremental": true,
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+	},
+	"watchOptions": {
+		"watchFile": "useFsEvents",
+		"watchDirectory": "useFsEvents",
+		"fallbackPolling": "dynamicPriority",
+		"excludeDirectories": [
+			"**/node_modules",
+			"_build"
+		],
+	},
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules"
+	]
 }

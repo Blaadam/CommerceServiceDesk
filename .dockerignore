@@ -10,3 +10,6 @@ build
 *.log
 coverage
 generated/**/node_modules
+bin
+sql
+.vscode
