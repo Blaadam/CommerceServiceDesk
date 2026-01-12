@@ -10,7 +10,7 @@ import * as Sentry from "@sentry/node";
 import { SentryHelper } from "../../shared/sentry-utils.ts";
 const connection = new databaseConnection();
 
-async function GetManagersFromDistrict(district: string, span?: any) {
+async function GetManagersFromDistrict(district: string, span?: any): Promise<string[]> {
   const table = connection.prisma.managerTable
   const rows = await table.findMany({ where: { District: district } });
 
@@ -23,7 +23,7 @@ async function GetManagersFromDistrict(district: string, span?: any) {
     return [`No managers found for district: ${district}`];
   }
 
-  const managersList = rows.map((row) => {
+  const managersList: string[] = rows.map((row) => {
     return `<@${row.DiscordId}> - ${row.TrelloId}`;
   });
 
@@ -70,7 +70,7 @@ export default class ViewHistoryCommand extends Command {
     await interaction.deferReply({ flags: ["Ephemeral"], });
     Sentry.logger.info("Deferred reply (ephemeral)");
 
-    const district = interaction.options.getString("district", true);
+    const district: string = interaction.options.getString("district", true);
     Sentry.logger.info("District option parsed", { district });
 
     return SentryHelper.tracer(interaction, {
@@ -86,9 +86,11 @@ export default class ViewHistoryCommand extends Command {
         Sentry.logger.info("Fetching managers from database", { district });
 
         try {
-          const districtManagers = await GetManagersFromDistrict(district, span);
+          const districtManagers: string[] = await GetManagersFromDistrict(district, span);
+
           childSpan.setStatus({ code: 1 });
           Sentry.logger.info("Fetched managers from DB", { district, count: Array.isArray(districtManagers) ? districtManagers.length : 0 });
+          
           return districtManagers;
         }
         catch (error) {
@@ -114,7 +116,7 @@ export default class ViewHistoryCommand extends Command {
       span.setAttribute("district.managers.list", managers.join(", "));
       span.setAttribute("district.managers.count", managers.length);
 
-      const newEmbed: EmbedBuilder = new EmbedBuilder()
+      const newEmbed = new EmbedBuilder()
         .setColor(global.embeds.embedColors.mgmt)
         .setTitle(`${district} Managers`)
         .setTimestamp()

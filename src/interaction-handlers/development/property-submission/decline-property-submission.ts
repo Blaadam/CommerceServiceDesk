@@ -20,9 +20,8 @@ export class ButtonHandler extends InteractionHandler {
   }
 
   public async run(interaction: ButtonInteraction) {
-    const messageId = interaction.message.id;
+    const messageId: string = interaction.message.id;
     const submitter: User = interaction.message.mentions.users.first();
-    const embed: Embed = interaction.message.embeds[0];
 
     const declineModal = new ModalBuilder()
       .setCustomId(`decline-dev-modal-${messageId}`)

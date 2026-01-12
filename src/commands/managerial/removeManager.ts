@@ -1,6 +1,7 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
   PermissionFlagsBits,
+  User,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
@@ -68,8 +69,8 @@ export default class ViewHistoryCommand extends Command {
   public async chatInputRun(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: ["Ephemeral"], });
 
-    const manager = interaction.options.getUser("manager", true)
-    const district = interaction.options.getString("district", true)
+    const manager: User = interaction.options.getUser("manager", true)
+    const district: string = interaction.options.getString("district", true)
 
     return SentryHelper.tracer(interaction, {
       name: "Remove Manager Command",
@@ -79,7 +80,7 @@ export default class ViewHistoryCommand extends Command {
         span.setAttribute("manager.id", manager.id);
         span.setAttribute("district", district);
 
-        const response = await Sentry.startSpan({
+        const response: string | undefined = await Sentry.startSpan({
           name: "Remove District Manager",
           op: "db.prisma",
         }, async (childSpan) => {

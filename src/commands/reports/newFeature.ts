@@ -8,7 +8,6 @@ import {
     type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-const Sentry = require("@sentry/node");
 
 @ApplyOptions<Command.Options>({
     name: "new-feature-request",

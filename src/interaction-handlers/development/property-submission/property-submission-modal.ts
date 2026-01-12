@@ -6,6 +6,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    Channel,
     EmbedBuilder,
     TextChannel,
     type ModalSubmitInteraction,
@@ -44,10 +45,10 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
-        const landPermit = interaction.fields.getTextInputValue("landPermit");
+        const landPermit: string = interaction.fields.getTextInputValue("landPermit");
         const propertyFile = interaction.fields.getUploadedFiles("propertyFile", true).first();
         let bannerImage = interaction.fields.getTextInputValue("bannerImage");
-        const furtherInformation = interaction.fields.getTextInputValue("furtherInformation");
+        const furtherInformation: string = interaction.fields.getTextInputValue("furtherInformation");
 
         const rbxUsername = SpliceUsername(interaction.user.displayName);
 
@@ -58,8 +59,8 @@ export class ModalHandler extends InteractionHandler {
             });
         }
 
-        const fileName = propertyFile.name;
-        const fileExtension = fileName.slice(fileName.lastIndexOf("."));
+        const fileName: string = propertyFile.name;
+        const fileExtension: string = fileName.slice(fileName.lastIndexOf("."));
 
         if (!PERMITTED_EXTENSIONS.includes(fileExtension)) {
             return interaction.reply({
@@ -99,9 +100,9 @@ export class ModalHandler extends InteractionHandler {
             declineButton
         );
 
-        const channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL) as TextChannel;
+        const channel: Channel | undefined = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
         
-        if (!channel) {
+        if (!channel || !(channel instanceof TextChannel)) {
             return interaction.reply({
                 content: `There was an error with your submission. Please use the bug report command if this issue persists.\nError: NO_CHANNEL_FOUND`,
                 flags: ["Ephemeral"],

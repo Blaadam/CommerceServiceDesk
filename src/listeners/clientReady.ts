@@ -1,4 +1,4 @@
-import { Listener, container } from "@sapphire/framework";
+import { Listener } from "@sapphire/framework";
 import { ActivityType, type Client } from "discord.js";
 import * as Sentry from "@sentry/node";
 
@@ -18,7 +18,7 @@ export class ClientReadyListener extends Listener {
       client.user.setActivity("under maintenance, please avoid using this service", { type: ActivityType.Custom });
       client.user.setStatus('dnd')
 
-      const guilds = client.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join(", ");
+      const guilds: string = client.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join(", ");
       this.container.logger.info(
         `Currently in ${client.guilds.cache.size} servers: ${guilds}`
       );
@@ -29,14 +29,7 @@ export class ClientReadyListener extends Listener {
       Sentry.metrics.distribution('client.ws.ping', ping);
     }
 
-    const flushSentry = () => {
-      // Sentry.flush();
-    }
-
     updatePingLatencyMetric();
     setInterval(updatePingLatencyMetric, 6_000);
-
-    // setInterval(flushSentry, NODE_ENV === "development" ? 30_000 : 60_000);
-
   }
 }

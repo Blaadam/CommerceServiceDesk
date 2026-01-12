@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
-import { Embed, EmbedBuilder, User, type ButtonInteraction } from 'discord.js';
+import { DMChannel, Embed, EmbedBuilder, User, type ButtonInteraction } from 'discord.js';
 
 @ApplyOptions({
   name: "approve-property-submission",
@@ -23,9 +23,14 @@ export class ButtonHandler extends InteractionHandler {
     const submitter: User = interaction.message.mentions.users.first();
     const embed: Embed = interaction.message.embeds[0];
 
-    const landPermit = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+    const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
 
-    const dmChannel = await submitter.createDM();
+    const dmChannel: DMChannel = await submitter.createDM();
+
+    if (!dmChannel) {
+      return interaction.reply({ content: "Could not create DM channel with the submitter.", ephemeral: true });
+    }
+
     await dmChannel.send({
       content: `Your property submission has been approved by ${interaction.user.toString()}.`,
       embeds: [embed],

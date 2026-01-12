@@ -3,6 +3,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  Channel,
   EmbedBuilder,
   PermissionFlagsBits,
   TextChannel,
@@ -10,7 +11,7 @@ import {
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils.ts";
-const Sentry = require("@sentry/node");
+import * as Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
   name: "land-deadline",
@@ -44,7 +45,7 @@ export default class ViewHistoryCommand extends Command {
       op: "command.deadlineAnnouncement",
     }, async (span: any) => {
       try {
-        const submissionDeadline = interaction.options.getString("deadline-date", true);
+        const submissionDeadline: string = interaction.options.getString("deadline-date", true);
 
         const newEmbed = new EmbedBuilder()
           .setAuthor({
@@ -73,12 +74,10 @@ export default class ViewHistoryCommand extends Command {
           .setLabel('Submit Activity')
           .setStyle(ButtonStyle.Success);
 
-        // Create an action row to store the button
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(SendActivity);
 
-        // Send the content to the channel
-        const channel = await interaction.client.channels.fetch(global.ChannelIDs.deadlineAnnouncements) as TextChannel | null;
-        if (!channel) {
+        const channel: Channel = await interaction.client.channels.fetch(global.ChannelIDs.deadlineAnnouncements);
+        if (!channel || !(channel instanceof TextChannel)) {
           span.setAttribute("command.status", "failed");
           return interaction.editReply({
             content: "The deadline announcements channel could not be found.",
@@ -86,11 +85,9 @@ export default class ViewHistoryCommand extends Command {
         }
 
         span.setAttribute("command.output.channel", channel.id);
-
         channel.send({ content: "<@&1164856752181870642>", embeds: [newEmbed], components: [row] });
-
         span.setAttribute("command.status", "success");
-        // Client returner
+
         await interaction.editReply({
           content: "Deadline announcement has been sent to the channel.",
         });

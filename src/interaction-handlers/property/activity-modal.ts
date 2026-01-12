@@ -6,6 +6,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    Channel,
     EmbedBuilder,
     TextChannel,
     type ModalSubmitInteraction,
@@ -41,8 +42,8 @@ async function CommentOnTrelloCardID(cardId: string, comment: string) {
 }
 
 async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
-    const url = "https://api.trello.com/1/search"
-    const idBoards = ["641e058f71db0c8ed6abecd7"]
+    const url: string = "https://api.trello.com/1/search"
+    const idBoards: string[] = ["641e058f71db0c8ed6abecd7"]
 
     span?.setAttribute("trello.search_url", url);
     span?.setAttribute("trello.search_boards", idBoards.join(","));
@@ -74,7 +75,7 @@ async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
     return card;
 }
 
-function SpliceUsername(Username) {
+function SpliceUsername(Username: string): string {
     const Spliced = Username.split(" ")
     return Spliced[Spliced.length - 1]
 }
@@ -109,10 +110,10 @@ export class ModalHandler extends InteractionHandler {
     public async run(interaction: ModalSubmitInteraction) {
         await interaction.deferReply({ flags: ["Ephemeral"] });
 
-        const businessName = interaction.fields.getTextInputValue("businessName");
-        const propertyDistrict = interaction.fields.getStringSelectValues("propertyDistrict");
-        const propertyActivity = interaction.fields.getTextInputValue("propertyActivity");
-        const additionalInformation = interaction.fields.getTextInputValue("additionalInformation");
+        const businessName: string = interaction.fields.getTextInputValue("businessName");
+        const propertyDistrict: readonly string[] = interaction.fields.getStringSelectValues("propertyDistrict");
+        const propertyActivity: string = interaction.fields.getTextInputValue("propertyActivity");
+        const additionalInformation: string = interaction.fields.getTextInputValue("additionalInformation");
 
         return SentryHelper.tracer(interaction, {
             name: "Property Activity Modal Submission",
@@ -131,11 +132,11 @@ export class ModalHandler extends InteractionHandler {
                 });
             }
 
-            const robloxName = SpliceUsername(interaction.user.displayName);
+            const robloxName: string = SpliceUsername(interaction.user.displayName);
             span.setAttribute("user.roblox_name", robloxName);
             Sentry.logger.info(`Derived roblox name: ${robloxName}`);
 
-            const District = propertyDistrict[0]; // Assuming string from modal
+            const District: string = propertyDistrict[0]; // Assuming string from modal
             span.setAttribute("property.district", District);
             Sentry.logger.info(`Selected district: ${District}`);
 
@@ -176,7 +177,7 @@ export class ModalHandler extends InteractionHandler {
                 });
             }
 
-            const query = `${District} ${businessName}`;
+            const query: string = `${District} ${businessName}`;
             span.setAttribute("trello.search_query", query);
             Sentry.logger.info("Searching Trello for card", { query });
 
@@ -256,10 +257,12 @@ export class ModalHandler extends InteractionHandler {
             const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
 
             Sentry.logger.info("Fetching notification channel", { channelId: global.ChannelIDs.landSubmissions });
-            const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
-            if (channel) {
-                const mentions = DistrictManagers.map(m => `<@${m.DiscordId}>`).join(" ");
+
+            const channel: Channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions);
+            if (channel && channel instanceof TextChannel) {
+                const mentions: string = DistrictManagers.map(m => `<@${m.DiscordId}>`).join(" ");
                 Sentry.logger.info("Sending notification to channel", { channelId: channel.id, mentionsCount: DistrictManagers.length });
+
                 await channel.send({ content: mentions, embeds: [newEmbed], components: [row] });
                 Sentry.logger.info("Notification sent to channel", { channelId: channel.id });
             } else {

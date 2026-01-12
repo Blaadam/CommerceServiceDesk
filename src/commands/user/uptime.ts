@@ -2,7 +2,7 @@ import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import { EmbedBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 
-function formatUptime(seconds) {
+function formatUptime(seconds: number): string {
     const SECONDS_IN_MINUTE = 60;
     const SECONDS_IN_HOUR = SECONDS_IN_MINUTE * 60;
     const SECONDS_IN_DAY = SECONDS_IN_HOUR * 24;
@@ -51,8 +51,8 @@ export default class UptimeCommand extends Command {
     }
 
     public chatInputRun(interaction: ChatInputCommandInteraction) {
-        const uptimeInSeconds = process.uptime();
-        const formattedUptime = formatUptime(uptimeInSeconds);
+        const uptimeInSeconds: number = process.uptime();
+        const formattedUptime: string = formatUptime(uptimeInSeconds);
 
         const responseEmbed = new EmbedBuilder()
             .setAuthor({

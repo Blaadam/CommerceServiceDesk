@@ -32,8 +32,8 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
-        const bugTitle = interaction.fields.getTextInputValue("bugTitle");
-        const bugDesc = interaction.fields.getTextInputValue("bugDesc");
+        const bugTitle: string = interaction.fields.getTextInputValue("bugTitle");
+        const bugDesc: string = interaction.fields.getTextInputValue("bugDesc");
 
         Sentry.logger.info(
             `Received bug report submission from ${interaction.user.tag} (${interaction.user.id})`

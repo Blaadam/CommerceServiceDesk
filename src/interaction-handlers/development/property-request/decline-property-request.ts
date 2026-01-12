@@ -24,6 +24,7 @@ export class ButtonHandler extends InteractionHandler {
     const messageId = interaction.message.id;
     const submitterId = getUserIdFromString(interaction.message.content);
     if (!submitterId) {
+      return interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
       throw new Error("Could not extract submitter ID from message content.");
     }
 

@@ -1,4 +1,3 @@
-// import "./instrument"
 import Client from "./client";
 import 'dotenv/config'
 import * as Sentry from "@sentry/node";

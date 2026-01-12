@@ -3,7 +3,12 @@ import {
     InteractionHandlerTypes,
 } from "@sapphire/framework";
 import {
+    Channel,
+    DMChannel,
+    Embed,
     EmbedBuilder,
+    Message,
+    Snowflake,
     TextChannel,
     User,
     type ModalSubmitInteraction,
@@ -42,23 +47,34 @@ export class ModalHandler extends InteractionHandler {
         interaction.deferReply({ flags: ["Ephemeral"] });
         const propertyFile = interaction.fields.getUploadedFiles("propertyFile", true).first();
 
-        const customId = interaction.customId;
-        const messageId = customId.replace("approve-request-modal-", "");
+        const customId: string = interaction.customId;
+        const messageId: Snowflake = customId.replace("approve-request-modal-", "");
 
-        const channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL) as TextChannel;
-        const message = await channel.messages.fetch(messageId);
+        const channel: Channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
 
-        const submitterId = getUserIdFromString(interaction.message.content);
+        if (!channel || !(channel instanceof TextChannel)) {
+            return interaction.editReply({ content: "Upload channel not found or is not a text channel." });
+        }
+
+        const message: Message = await channel.messages.fetch(messageId);
+
+        const submitterId: string = getUserIdFromString(interaction.message.content);
         if (!submitterId) {
             await interaction.editReply({ content: "Could not extract submitter ID from message content." });
             throw new Error("Could not extract submitter ID from message content.");
         }
 
         const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
-        const embed = message.embeds[0];
-        const landPermit = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+        const embed: Embed = message.embeds[0];
+        const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
 
-        const dmChannel = await submitter.createDM();
+        const dmChannel: DMChannel | undefined = await submitter.createDM();
+
+        if (!dmChannel) {
+            await interaction.editReply({ content: "Could not create DM channel with the submitter." });
+            return;
+        }
+
         await dmChannel.send({
             content: `Your property submission has been approved by ${interaction.user.toString()}.`,
             embeds: [embed],

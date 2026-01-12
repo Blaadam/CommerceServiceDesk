@@ -29,16 +29,13 @@ export class ButtonHandler extends InteractionHandler {
   }
 
   public async run(interaction: ButtonInteraction) {
-    const messageId = interaction.message.id;
-    const submitterId = getUserIdFromString(interaction.message.content);
+    const messageId: bigint = BigInt(interaction.message.id);
+    const submitterId: string = getUserIdFromString(interaction.message.content);
     if (!submitterId) {
       throw new Error("Could not extract submitter ID from message content.");
     }
 
     const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
-    const embed: Embed = interaction.message.embeds[0];
-
-    const landPermit = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
 
     const approveModal = new ModalBuilder()
       .setCustomId(`approve-request-modal-${messageId}`)

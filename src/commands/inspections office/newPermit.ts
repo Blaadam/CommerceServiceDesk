@@ -1,12 +1,15 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
+  DMChannel,
   GuildMember,
   PermissionFlagsBits,
+  Role,
+  User,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils.ts";
-const Sentry = require("@sentry/node");
+import * as Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
   name: "new-permit",
@@ -41,17 +44,17 @@ export default class ViewHistoryCommand extends Command {
       op: "command.newPermit",
     }, async (span: any) => {
       try {
-        const user = interaction.options.getUser('user');
-        const permitLink = interaction.options.getString('permit');
+        const permitLink: string = interaction.options.getString('permit');
+        const member: GuildMember = interaction.options.getMember('user') as GuildMember;
+        const businessRepRole: Role | undefined = member.guild.roles.cache.find(role => role.name === "Business Representative");
 
-        const member = interaction.options.getMember('user') as GuildMember;
-
-        const businessRepRole = member.guild.roles.cache.find(role => role.name === "Business Representative");
-        member.roles.add(businessRepRole);
+        if (businessRepRole && !member.roles.cache.has(businessRepRole.id)) {
+          member.roles.add(businessRepRole);
+        }
 
         const passMessage = "**Permitted Business Message**\r\n"
           + "\r\n"
-          + `Hello ${user} , \r\n`
+          + `Hello ${member} , \r\n`
           + "\r\n"
           + "I am sending this to inform you that your permit application has passed inspection and has been signed meaning that you are officially a licensed business owner. Please be sure to do the following if they have not already been completed:\r\n"
           + "\r\n"
@@ -70,19 +73,18 @@ export default class ViewHistoryCommand extends Command {
           + `${interaction.user} \r\n`
           + "Firestone Department of Commerce";
 
-        if (!user) {
+        if (!member) {
           return interaction.editReply({ content: "User not found." });
         }
 
-        const dmChannel = await user.createDM();
+        const dmChannel: DMChannel | undefined = await member.createDM();
         if (!dmChannel) {
           return interaction.editReply({ content: "Could not create DM channel." });
         }
 
         dmChannel.send(passMessage);
-        await interaction.editReply({ content: `Message sent to ${user.tag} successfully!` });
+        await interaction.editReply({ content: `Message sent to ${member.user.tag} successfully!` });
         span.setAttribute("command.status", "success");
-        span.end();
       } catch (error) {
         Sentry.captureException(error);
         span.setAttribute("command.status", "error")

@@ -32,8 +32,8 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
-        const featureTitle = interaction.fields.getTextInputValue("featureTitle");
-        const featureDesc = interaction.fields.getTextInputValue("featureDesc");
+        const featureTitle: string = interaction.fields.getTextInputValue("featureTitle");
+        const featureDesc: string = interaction.fields.getTextInputValue("featureDesc");
 
         if (!featureTitle || !featureDesc) {
             return interaction.reply({

@@ -6,6 +6,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    Channel,
     EmbedBuilder,
     TextChannel,
     type ModalSubmitInteraction,
@@ -15,7 +16,6 @@ require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 
-const PERMITTED_EXTENSIONS = [".rbxm"];
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
 function SpliceUsername(username: string) {
@@ -44,11 +44,11 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
-        const landPermit = interaction.fields.getTextInputValue("landPermit");
-        const propertyIntentions = interaction.fields.getTextInputValue("propertyIntentions");
-        const furtherInformation = interaction.fields.getTextInputValue("furtherInformation");
+        const landPermit: string = interaction.fields.getTextInputValue("landPermit");
+        const propertyIntentions: string = interaction.fields.getTextInputValue("propertyIntentions");
+        const furtherInformation: string = interaction.fields.getTextInputValue("furtherInformation");
 
-        const rbxUsername = SpliceUsername(interaction.user.displayName);
+        const rbxUsername: string = SpliceUsername(interaction.user.displayName);
 
         const embed = new EmbedBuilder()
             .setTitle("New Property Request")
@@ -77,9 +77,9 @@ export class ModalHandler extends InteractionHandler {
             declineButton
         );
 
-        const channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL) as TextChannel;
-        
-        if (!channel) {
+        const channel: Channel | undefined = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
+
+        if (!channel || !(channel instanceof TextChannel)) {
             return interaction.reply({
                 content: `There was an error with your request. Please use the bug report command if this issue persists.\nError: NO_CHANNEL_FOUND`,
                 flags: ["Ephemeral"],

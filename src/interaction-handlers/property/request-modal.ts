@@ -115,11 +115,11 @@ export class ModalHandler extends InteractionHandler {
   }
 
   public async run(interaction: ModalSubmitInteraction) {
-    const businessPermit = interaction.fields.getTextInputValue("businessPermit");
-    const businessGroup = interaction.fields.getTextInputValue("businessGroup");
-    const propertiesBefore = interaction.fields.getTextInputValue("propertiesBefore");
-    const requestedLand = interaction.fields.getTextInputValue("requestedLand");
-    const propertyUse = interaction.fields.getTextInputValue("propertyUse");
+    const businessPermit: string = interaction.fields.getTextInputValue("businessPermit");
+    const businessGroup: string = interaction.fields.getTextInputValue("businessGroup");
+    const propertiesBefore: string = interaction.fields.getTextInputValue("propertiesBefore");
+    const requestedLand: string = interaction.fields.getTextInputValue("requestedLand");
+    const propertyUse: string = interaction.fields.getTextInputValue("propertyUse");
 
     return SentryHelper.tracer(interaction, {
       name: "Property Request Modal Submission",
@@ -146,9 +146,9 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        const robloxName = SpliceUsername(interaction.user.displayName)
-        span.setAttribute("user.robloxName", robloxName);
+        const robloxName: string = SpliceUsername(interaction.user.displayName)
 
+        span.setAttribute("user.robloxName", robloxName);
         span.setAttribute("property.requested_land_url", requestedLand);
 
         if (!requestedLand.includes("trello.com/c/")) {
@@ -163,7 +163,7 @@ export class ModalHandler extends InteractionHandler {
 
         span.setAttribute("trello.card_url", requestedLand);
 
-        const CardTitle = requestedLand.split("/c/")
+        const CardTitle: string[] = requestedLand.split("/c/")
 
         if (!CardTitle[1]) {
           return interaction.reply({
@@ -172,10 +172,10 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        const CardID = CardTitle[1].split("/")[0]
+        const CardID: string = CardTitle[1].split("/")[0]
         span.setAttribute("trello.card_id", CardID);
 
-        const card_url = `https://api.trello.com/1/cards/${CardID}`
+        const card_url: string = `https://api.trello.com/1/cards/${CardID}`
 
         // Fetch Trello Card Data
         const response = await Sentry.startSpan({
@@ -224,7 +224,7 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        const District = GetDistrictFromID(response.data.idList)
+        const District: string = GetDistrictFromID(response.data.idList)
         span.setAttribute("property.district", District);
 
         if (!District) {

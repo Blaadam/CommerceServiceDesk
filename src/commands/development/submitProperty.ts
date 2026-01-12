@@ -9,7 +9,6 @@ import {
     type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-const Sentry = require("@sentry/node");
 
 @ApplyOptions<Command.Options>({
     name: "submit-property",
@@ -77,14 +76,6 @@ export default class ViewHistoryCommand extends Command {
         modal.addLabelComponents(landPermitLabel);
         modal.addTextDisplayComponents(textDisplayLabel);
         modal.addLabelComponents(propertyFileLabel, bannerImageLabel, furtherInformationLabel);
-
-        // Sentry.logger.info(`Property submission modal opened by ${interaction.user.globalName} (${interaction.user.id})`, {
-        //     user: { id: interaction.user.id, username: interaction.user.globalName },
-        //     "command.name": this.name,
-        //     "command.status": "success",
-        //     "command.modal": "property-submission-modal"
-        // });
-
         return await interaction.showModal(modal);
     }
 }

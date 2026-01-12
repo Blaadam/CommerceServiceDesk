@@ -3,8 +3,14 @@ import {
     InteractionHandlerTypes,
 } from "@sapphire/framework";
 import {
+    Channel,
+    DMChannel,
+    Embed,
     EmbedBuilder,
+    Message,
+    Snowflake,
     TextChannel,
+    User,
     type ModalSubmitInteraction,
 } from "discord.js";
 import "dotenv";
@@ -37,19 +43,34 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
-        const declineReason = interaction.fields.getTextInputValue("declineReason");
+        const declineReason: string = interaction.fields.getTextInputValue("declineReason");
 
-        const customId = interaction.customId;
-        const messageId = customId.replace("decline-dev-modal-", "");
+        const customId: string = interaction.customId;
+        const messageId: Snowflake = customId.replace("decline-dev-modal-", "");
 
-        const channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL) as TextChannel;
-        const message = await channel.messages.fetch(messageId);
+        const channel: Channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
 
-        const submitter = message.mentions.users.first();
-        const embed = message.embeds[0];
-        const landPermit = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+        if (!channel || !(channel instanceof TextChannel)) {
+            return interaction.editReply({ content: "Upload channel not found or is not a text channel." });
+        }
 
-        const dmChannel = await submitter.createDM();
+        const message: Message = await channel.messages.fetch(messageId);
+
+        const submitter: User | undefined = message.mentions.users.first();
+
+        if (!submitter) {
+            return interaction.reply({ content: "Could not find the submitter from the message mentions.", ephemeral: true });
+        }
+
+        const embed: Embed = message.embeds[0];
+        const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+
+        const dmChannel: DMChannel | undefined = await submitter.createDM();
+
+        if (!dmChannel) {
+            return interaction.reply({ content: "Could not create DM channel with the submitter.", ephemeral: true });
+        }
+
         await dmChannel.send({
             content: `Your property submission has been declined by ${interaction.user.toString()} for the following reason:\n\n${declineReason}`,
             embeds: [embed],

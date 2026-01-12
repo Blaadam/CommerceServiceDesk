@@ -87,21 +87,21 @@ export default class ViewHistoryCommand extends Command {
     return SentryHelper.tracer(interaction, {
       name: "New Manager Command",
       op: "command.newManager",
-    }, async (span: any) => {
+    }, async (span) => {
       const manager = interaction.options.getUser("manager", true)
       const district = interaction.options.getString("district", true)
       const trelloID = interaction.options.getString("trelloid", true)
 
-      const response = await Sentry.startSpan({
+      span.setAttribute("manager.id", manager.id);
+      span.setAttribute("district", district);
+      span.setAttribute("trelloID", trelloID);
+
+      const response: string | undefined = await Sentry.startSpan({
         name: "Add District Manager",
         op: "db.prisma",
-      }, async (span) => {
+      }, async (childSpan) => {
         try {
-          span.setAttribute("manager.id", manager.id);
-          span.setAttribute("district", district);
-          span.setAttribute("trelloID", trelloID);
-
-          const result = await AddManagerToDistrict(
+          const result: string = await AddManagerToDistrict(
             BigInt(manager.id),
             district,
             trelloID
@@ -112,10 +112,11 @@ export default class ViewHistoryCommand extends Command {
           return result;
         }
         catch (error) {
-          span.setStatus({ code: 2, message: "internal_error" });
+          childSpan.setStatus({ code: 2, message: "internal_error" });
           span.setStatus({ code: 2, message: "internal_error" });
           span.setAttribute("error.message", (error as Error).message);
           Sentry.captureException(error);
+
           return null
         }
       });

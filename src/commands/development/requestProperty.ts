@@ -7,7 +7,6 @@ import {
     type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-const Sentry = require("@sentry/node");
 
 @ApplyOptions<Command.Options>({
     name: "request-property",
@@ -60,14 +59,6 @@ export default class ViewHistoryCommand extends Command {
             );
 
         modal.addLabelComponents(landPermitLabel, propertyIntentionsLabel, furtherInformationLabel);
-
-        // Sentry.logger.info(`Property request modal opened by ${interaction.user.globalName} (${interaction.user.id})`, {
-        //     user: { id: interaction.user.id, username: interaction.user.globalName },
-        //     "command.name": this.name,
-        //     "command.status": "success",
-        //     "command.modal": "property-request-modal"
-        // });
-
         return await interaction.showModal(modal);
     }
 }
