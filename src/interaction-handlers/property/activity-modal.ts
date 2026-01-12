@@ -26,12 +26,15 @@ const ADDON = `?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`
 
 const ACTIVE_LIST_ID = "641e10486e814e91bb2f6d31"
 
-async function CommentOnTrelloCardID(cardId: string, comment: string) {
-	const url = `https://api.trello.com/1/cards/${cardId}/actions/comments${ADDON}`
+async function CommentOnTrelloCardID(cardId: string, comment: string, span?: Sentry.Span) {
+	const url = `https://api.trello.com/1/cards/${cardId}/actions/comments`
+
+	span?.setAttribute("trello.comment_url", url);
+	span?.setAttribute("trello.card_id", cardId);
 
 	const response = await axios({
 		"method": 'post',
-		"url": url,
+		"url": url+ADDON,
 		data: {
 			"text": comment
 		},
@@ -219,7 +222,7 @@ export class ModalHandler extends InteractionHandler {
 **Property District**: ${District}
 **Property Activity**: ${propertyActivity}
 
-**Additional Information**: ${additionalInformation}`
+**Additional Information**: ${additionalInformation}`, childSpan
 					);
 					childSpan.setStatus({ code: 1 });
 					Sentry.logger.info("Successfully added comment to Trello card", { cardId: ExistingCard.id });
