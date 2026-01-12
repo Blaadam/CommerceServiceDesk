@@ -120,9 +120,6 @@ export class ModalHandler extends InteractionHandler {
             op: "property.activity_modal",
             attributes: { "modal.custom_id": interaction.customId }
         }, async (span) => {
-            SentryHelper.logInteraction(interaction, false, span)
-            // Sentry.logger.info(`Processing activity submission modal from ${interaction.user.tag}`);
-
             span.setAttribute("user.id", interaction.user.id);
             span.setAttribute("user.tag", interaction.user.tag);
             span.setAttribute("business.name", businessName);

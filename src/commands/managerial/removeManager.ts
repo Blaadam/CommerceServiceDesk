@@ -6,6 +6,8 @@ import {
 import { ApplyOptions } from "@sapphire/decorators";
 
 import { databaseConnection } from "../../database";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
+import * as Sentry from "@sentry/node";
 const connection = new databaseConnection();
 
 async function RemoveManagerFromDistrict(
@@ -69,24 +71,56 @@ export default class ViewHistoryCommand extends Command {
     const manager = interaction.options.getUser("manager", true)
     const district = interaction.options.getString("district", true)
 
-    let response: string;
-    try {
+    return SentryHelper.tracer(interaction, {
+      name: "Remove Manager Command",
+      op: "command.removeManager",
+    }, async (span: any) => {
       try {
-        response = await RemoveManagerFromDistrict(
-          BigInt(manager.id),
-          district
-        );
-      } catch (err) {
-        console.error("Error fetching moderation history:", err);
-        response = "An error occurred while adding the manager to the district.";
-      }
-    } catch (error) {
-      console.error("Error in new-manager command:", error);
-      response = "An unexpected error occurred while processing your request.";
-    }
+        span.setAttribute("manager.id", manager.id);
+        span.setAttribute("district", district);
 
-    return interaction.editReply({
-      content: response,
+        const response = await Sentry.startSpan({
+          name: "Remove District Manager",
+          op: "db.prisma",
+        }, async (childSpan) => {
+          try {
+            const res = await RemoveManagerFromDistrict(
+              BigInt(manager.id),
+              district
+            );
+            childSpan.setAttribute("result.message", res);
+            childSpan.setStatus({ code: 1 });
+            return res;
+          }
+          catch (error) {
+            childSpan.setStatus({ code: 2, message: "internal_error" });
+
+            span.setStatus({ code: 2, message: "internal_error" });
+            span.setAttribute("error.message", error.message);
+            Sentry.captureException(error);
+
+            return null;
+          }
+        });
+
+        if (response === null) {
+          return await interaction.editReply({
+            content: "An unexpected error occurred while processing your request.",
+          });
+        }
+
+        return await interaction.editReply({
+          content: response,
+        });
+
+      }
+      catch (error) {
+        span.setStatus({ code: 2, message: "internal_error" });
+        span.setAttribute("error.message", (error as Error).message);
+        
+        Sentry.captureException(error);
+        throw error;
+      }
     });
   }
 }

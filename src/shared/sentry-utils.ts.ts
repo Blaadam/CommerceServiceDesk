@@ -86,8 +86,10 @@ export class SentryHelper {
       'interaction.type': this.getInteractionType(interaction),
       'interaction.createdTimestamp': interaction.createdTimestamp,
       'interaction.locale': interaction.locale,
+
       'user.id': interaction.user.id,
       'user.username': interaction.user.username,
+
       'guild.id': interaction.guild?.id || 'DM',
       'guild.name': interaction.guild?.name || 'DM',
       'channel.id': interaction.channel?.id || 'DM',
@@ -114,6 +116,7 @@ export class SentryHelper {
     if (interaction.isAutocomplete()) return 'Autocomplete';
     if (interaction.isContextMenuCommand()) return 'ContextMenu';
     if (interaction.isAnySelectMenu()) return 'SelectMenu';
+    
     return 'Unknown';
   }
 }

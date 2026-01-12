@@ -4,8 +4,10 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
-
 import { databaseConnection } from "../../database";
+import { SentryHelper } from "../../shared/sentry-utils.ts";
+import * as Sentry from "@sentry/node";
+
 const connection = new databaseConnection();
 
 async function AddManagerToDistrict(
@@ -82,29 +84,49 @@ export default class ViewHistoryCommand extends Command {
   public async chatInputRun(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: ["Ephemeral"], });
 
-    const manager = interaction.options.getUser("manager", true)
-    const district = interaction.options.getString("district", true)
-    const trelloID = interaction.options.getString("trelloid", true)
+    return SentryHelper.tracer(interaction, {
+      name: "New Manager Command",
+      op: "command.newManager",
+    }, async (span: any) => {
+      const manager = interaction.options.getUser("manager", true)
+      const district = interaction.options.getString("district", true)
+      const trelloID = interaction.options.getString("trelloid", true)
 
-    let response: string;
-    try {
-      try {
-        response = await AddManagerToDistrict(
-          BigInt(manager.id),
-          district,
-          trelloID
-        );
-      } catch (err) {
-        console.error("Error fetching moderation history:", err);
-        response = "An error occurred while adding the manager to the district.";
+      const response = await Sentry.startSpan({
+        name: "Add District Manager",
+        op: "db.prisma",
+      }, async (span) => {
+        try {
+          span.setAttribute("manager.id", manager.id);
+          span.setAttribute("district", district);
+          span.setAttribute("trelloID", trelloID);
+
+          const result = await AddManagerToDistrict(
+            BigInt(manager.id),
+            district,
+            trelloID
+          );
+
+          span.setAttribute("result.message", result);
+          span.setStatus({ code: 1 }); // OK
+          return result;
+        }
+        catch (error) {
+          span.setStatus({ code: 2, message: "internal_error" });
+          span.setStatus({ code: 2, message: "internal_error" });
+          span.setAttribute("error.message", (error as Error).message);
+          Sentry.captureException(error);
+          return null
+        }
+      });
+
+      if (response === null) {
+        return interaction.editReply({
+          content: "An unexpected error occurred while processing your request.",
+        });
       }
-    } catch (error) {
-      console.error("Error in new-manager command:", error);
-      response = "An unexpected error occurred while processing your request.";
-    }
 
-    return interaction.editReply({
-      content: response,
+      return interaction.editReply({ content: response });
     });
   }
 }
