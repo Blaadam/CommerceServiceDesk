@@ -9,6 +9,7 @@ import {
 	type ButtonInteraction
 } from 'discord.js';
 import { getUserIdFromString } from '../../../shared/useridFromString';
+import { SentryHelper } from '../../../shared/sentry-utils.ts';
 
 @ApplyOptions({
 	name: "approve-property-request",
@@ -28,32 +29,45 @@ export class ButtonHandler extends InteractionHandler {
 	}
 
 	public async run(interaction: ButtonInteraction) {
-		const messageId: bigint = BigInt(interaction.message.id);
-		const submitterId: string = getUserIdFromString(interaction.message.content);
-		if (!submitterId) {
-			throw new Error("Could not extract submitter ID from message content.");
-		}
+		SentryHelper.tracer(interaction, {
+			name: "Approve Property Request Button",
+			op: "interaction.handler.property-request.approve-button",
+		}, async (span) => {
+			const messageId: bigint = BigInt(interaction.message.id);
+			span.setAttribute("interaction.messageId", messageId.toString());
 
-		const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
+			const submitterId: string = getUserIdFromString(interaction.message.content);
 
-		const approveModal = new ModalBuilder()
-			.setCustomId(`approve-request-modal-${messageId}`)
-			.setTitle("Approve Property Request");
+			if (!submitterId) {
+				span.setAttribute("interaction.status", "failed");
+				span.setAttribute("interaction.response", "Could not extract submitter ID from message content.");
+				span.setStatus({ code: 2 });
 
-		const approveTextDisplay = new TextDisplayBuilder()
-			.setContent(`You are approving the property request by **${submitter.username}**.\nPlease attach the property file below.`);
+				return await interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+			}
 
-		const propertyFileUploadLabel = new LabelBuilder()
-			.setLabel("Property File Upload")
-			.setFileUploadComponent(
-				new FileUploadBuilder()
-					.setCustomId("propertyFile")
-					.setRequired(true)
-			);
+			const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
+			span.setAttribute("interaction.submitterId", submitter.id);
 
-		approveModal.addTextDisplayComponents(approveTextDisplay);
-		approveModal.addLabelComponents(propertyFileUploadLabel);
+			const approveModal = new ModalBuilder()
+				.setCustomId(`approve-request-modal-${messageId}`)
+				.setTitle("Approve Property Request");
 
-		await interaction.showModal(approveModal);
+			const approveTextDisplay = new TextDisplayBuilder()
+				.setContent(`You are approving the property request by **${submitter.username}**.\nPlease attach the property file below.`);
+
+			const propertyFileUploadLabel = new LabelBuilder()
+				.setLabel("Property File Upload")
+				.setFileUploadComponent(
+					new FileUploadBuilder()
+						.setCustomId("propertyFile")
+						.setRequired(true)
+				);
+
+			approveModal.addTextDisplayComponents(approveTextDisplay);
+			approveModal.addLabelComponents(propertyFileUploadLabel);
+
+			await interaction.showModal(approveModal);
+		});
 	}
 }
