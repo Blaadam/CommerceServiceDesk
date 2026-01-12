@@ -12,13 +12,7 @@ require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 
-const PERMITTED_EXTENSIONS = [".rbxm"];
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
-
-function SpliceUsername(username: string) {
-    var spliced = username.split(" ")
-    return spliced[spliced.length - 1]
-}
 
 @ApplyOptions({
     name: "decline-dev-modal",

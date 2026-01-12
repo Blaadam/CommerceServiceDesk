@@ -19,7 +19,7 @@ const PERMITTED_EXTENSIONS = [".rbxm"];
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
 function SpliceUsername(username: string) {
-    var spliced = username.split(" ")
+    const spliced = username.split(" ")
     return spliced[spliced.length - 1]
 }
 
@@ -46,7 +46,7 @@ export class ModalHandler extends InteractionHandler {
     public async run(interaction: ModalSubmitInteraction) {
         const landPermit = interaction.fields.getTextInputValue("landPermit");
         const propertyFile = interaction.fields.getUploadedFiles("propertyFile", true).first();
-        var bannerImage = interaction.fields.getTextInputValue("bannerImage");
+        let bannerImage = interaction.fields.getTextInputValue("bannerImage");
         const furtherInformation = interaction.fields.getTextInputValue("furtherInformation");
 
         const rbxUsername = SpliceUsername(interaction.user.displayName);

@@ -26,9 +26,9 @@ const ADDON = `?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`
 const ACTIVE_LIST_ID = "641e10486e814e91bb2f6d31"
 
 async function CommentOnTrelloCardID(cardId: string, comment: string) {
-    var url = `https://api.trello.com/1/cards/${cardId}/actions/comments${ADDON}`
+    const url = `https://api.trello.com/1/cards/${cardId}/actions/comments${ADDON}`
 
-    let response = await axios({
+    const response = await axios({
         "method": 'post',
         "url": url,
         data: {
@@ -63,7 +63,7 @@ async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
     if (response.data.cards.length == 0) return null
 
     // find first card that isnt archived
-    var card
+    let card
     for (let i = 0; i < response.data.cards.length; i++) {
         if (response.data.cards[i].idList == ACTIVE_LIST_ID && !response.data.cards[i].closed) {
             card = response.data.cards[i]
@@ -75,15 +75,14 @@ async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
 }
 
 function SpliceUsername(Username) {
-    var Spliced = Username.split(" ")
+    const Spliced = Username.split(" ")
     return Spliced[Spliced.length - 1]
 }
 
 // Grabs the manager for a district
 async function GetManagersFromDistrict(district: string) {
-    var table = connection.prisma.managerTable
-
-    var rows = await table.findMany({ where: { District: district } });
+    const table = connection.prisma.managerTable
+    const rows = await table.findMany({ where: { District: district } });
     return rows;
 }
 

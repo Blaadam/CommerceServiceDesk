@@ -50,9 +50,8 @@ const Settings = {
 }
 
 async function PublishCard(Title, Description, Labels, Managers) {
-  var url = `https://api.trello.com/1/cards${ADDON}`
-
-  let response = await axios({
+  const url = `https://api.trello.com/1/cards${ADDON}`
+  const response = await axios({
     "method": 'post',
     "url": url,
     data: {
@@ -69,22 +68,21 @@ async function PublishCard(Title, Description, Labels, Managers) {
 }
 
 function SpliceUsername(Username) {
-  var Spliced = Username.split(" ")
+  const Spliced = Username.split(" ")
   return Spliced[Spliced.length - 1]
 }
 
 // Grabs the manager for a district
 async function GetManagersFromDistrict(district: string) {
-  var table = connection.prisma.managerTable
-
-  var rows = await table.findMany({ where: { District: district } });
+  const table = connection.prisma.managerTable
+  const rows = await table.findMany({ where: { District: district } });
   return rows;
 }
 
 function GetDistrictFromID(ListID) {
-  var District = ""
+  let District = ""
   for (let key in Settings.AreaListIds) {
-    var Data = Settings.AreaListIds[key]
+    const Data = Settings.AreaListIds[key]
     if (Data[0] == ListID) {
       District = Data[1] || key
       break
@@ -273,7 +271,7 @@ export class ModalHandler extends InteractionHandler {
           });
         }
 
-        var DistrictManager_DiscordOutput = ""
+        let DistrictManager_DiscordOutput = ""
 
         for (let row in DistrictManagers) {
           DistrictManager_DiscordOutput += `<@${DistrictManagers[row].DiscordId}> `
@@ -288,7 +286,7 @@ export class ModalHandler extends InteractionHandler {
           op: "property.publish_trello_card",
         }, async (childSpan) => {
           try {
-            var publishedCard = await PublishCard(robloxName,
+            const publishedCard = await PublishCard(robloxName,
               "#Land Request\n\n" +
               "---\n\n" +
               `**Submitted at**: ${DateS.toUTCString()}\n` +

@@ -11,9 +11,8 @@ import { SentryHelper } from "../../shared/sentry-utils.ts";
 const connection = new databaseConnection();
 
 async function GetManagersFromDistrict(district: string, span?: any) {
-  var table = connection.prisma.managerTable
-
-  var rows = await table.findMany({ where: { District: district } });
+  const table = connection.prisma.managerTable
+  const rows = await table.findMany({ where: { District: district } });
 
   span?.setAttribute("database.table", "managerTable");
   span?.setAttribute("database.query", `findMany where District = ${district}`);
@@ -24,7 +23,7 @@ async function GetManagersFromDistrict(district: string, span?: any) {
     return [`No managers found for district: ${district}`];
   }
 
-  let managersList = rows.map((row) => {
+  const managersList = rows.map((row) => {
     return `<@${row.DiscordId}> - ${row.TrelloId}`;
   });
 

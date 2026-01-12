@@ -14,7 +14,7 @@ async function RemoveManagerFromDistrict(
   managerId: bigint,
   district: string
 ) {
-  var table = connection.prisma.managerTable;
+  const table = connection.prisma.managerTable;
 
   const existingManager = await table.findFirst({
     where: { DiscordId: managerId, District: district },

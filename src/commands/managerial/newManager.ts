@@ -15,7 +15,7 @@ async function AddManagerToDistrict(
   district: string,
   trelloId: string
 ) {
-  var table = connection.prisma.managerTable;
+  const table = connection.prisma.managerTable;
 
   // Check if the manager already exists in the district
   const existingManager = await table.findFirst({

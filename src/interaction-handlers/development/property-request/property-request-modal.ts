@@ -19,7 +19,7 @@ const PERMITTED_EXTENSIONS = [".rbxm"];
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
 function SpliceUsername(username: string) {
-    var spliced = username.split(" ")
+    const spliced = username.split(" ")
     return spliced[spliced.length - 1]
 }
 
