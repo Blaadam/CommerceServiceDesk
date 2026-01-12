@@ -11,7 +11,6 @@ import {
 	TextChannel,
 	type ModalSubmitInteraction,
 } from "discord.js";
-import "dotenv";
 import axios from "axios";
 import * as Sentry from "@sentry/node";
 

@@ -5,9 +5,7 @@ import {
 import {
     type ModalSubmitInteraction,
 } from "discord.js";
-import "dotenv";
 import * as Sentry from "@sentry/node";
-require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 

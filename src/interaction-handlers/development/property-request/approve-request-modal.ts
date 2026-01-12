@@ -13,8 +13,6 @@ import {
     User,
     type ModalSubmitInteraction,
 } from "discord.js";
-import "dotenv";
-require("dotenv").config();
 
 import { ApplyOptions } from "@sapphire/decorators";
 import { getUserIdFromString } from "../../../shared/useridFromString";
