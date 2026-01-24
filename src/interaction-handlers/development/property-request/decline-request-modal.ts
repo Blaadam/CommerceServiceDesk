@@ -133,9 +133,8 @@ export class ModalHandler extends InteractionHandler {
                 }
             });
 
-            return interaction.reply({
+            return interaction.editReply({
                 content: `You have declined the property request for ${landPermit}.`,
-                flags: ["Ephemeral"],
             });
         });
     }

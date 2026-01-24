@@ -1,7 +1,7 @@
 {
 	"name": "land-management-v2",
 	"main": "bin/index.js",
-	"version": "2.2.1",
+	"version": "2.2.2",
 	"dependencies": {
 		"@discordjs/voice": "^0.18.0",
 		"@prisma/client": "^6.18.0",
