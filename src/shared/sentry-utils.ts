@@ -4,12 +4,12 @@ import type { Interaction, ModalSubmitInteraction, ChatInputCommandInteraction, 
 
 export class SentryHelper {
 	public static async tracer<T>(interaction: Interaction, options: StartSpanOptions, callback: (span: Sentry.Span) => T): Promise<T> {
-		return await Sentry.startNewTrace(async () => {
-			return Sentry.withIsolationScope(async () => {
-				return Sentry.startSpan<T>(options, (span) => {
+		return await Sentry.startNewTrace<Promise<T>>(async () => {
+			return await Sentry.withIsolationScope<Promise<T>>(async () => {
+				return await Sentry.startSpan<Promise<T>>(options, async (span) => {
 					try {
-						this.logInteraction(interaction, false, span);
-						return callback(span);
+						await this.logInteraction(interaction, false, span);
+						return await callback(span);
 					}
 					catch (error) {
 						span.setStatus({ code: 2, message: "internal_error" });
@@ -35,7 +35,7 @@ export class SentryHelper {
 	 * @param interaction The Discord interaction object
 	 * @param span The current Sentry span (optional)
 	 */
-	public static logInteraction(interaction: Interaction, sendMetric: boolean = true, span?: any) {
+	public static async logInteraction(interaction: Interaction, sendMetric: boolean = true, span?: any) {
 		const data = this.extractInteractionData(interaction);
 
 		// 1. Log to Sentry Metrics (Counter)

@@ -12,6 +12,6 @@ export class UserEvent extends Listener {
 	}
 
 	async run(interaction: Interaction) {
-		SentryHelper.logInteraction(interaction);
+		await SentryHelper.logInteraction(interaction);
 	}
 }

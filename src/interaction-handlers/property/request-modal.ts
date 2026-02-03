@@ -114,6 +114,8 @@ export class ModalHandler extends InteractionHandler {
 	}
 
 	public async run(interaction: ModalSubmitInteraction) {
+		interaction.deferReply({ ephemeral: true });
+
 		const businessPermit: string = interaction.fields.getTextInputValue("businessPermit");
 		const businessGroup: string = interaction.fields.getTextInputValue("businessGroup");
 		const propertiesBefore: string = interaction.fields.getTextInputValue("propertiesBefore");
@@ -139,9 +141,8 @@ export class ModalHandler extends InteractionHandler {
 					span.setAttribute("command.status_reason", "missing_fields");
 					span.setStatus({ code: 2, message: "missing_fields" });
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "You did not fill in the field correctly.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -153,10 +154,10 @@ export class ModalHandler extends InteractionHandler {
 				if (!requestedLand.includes("trello.com/c/")) {
 					span.setAttribute("command.status", "failed");
 					span.setAttribute("command.status_reason", "invalid_trello_link");
+					span.setStatus({ code: 2, message: "invalid_trello_link" });
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "You did not specify a trello link.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -165,9 +166,12 @@ export class ModalHandler extends InteractionHandler {
 				const CardTitle: string[] = requestedLand.split("/c/")
 
 				if (!CardTitle[1]) {
-					return interaction.reply({
+					span.setAttribute("command.status", "failed");
+					span.setAttribute("command.status_reason", "invalid_trello_link_format");
+					span.setStatus({ code: 2, message: "invalid_trello_link_format" });
+
+					return interaction.editReply({
 						content: "You did not specify a trello link.\nPlease use the bug report command if the issue persists.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -216,10 +220,10 @@ export class ModalHandler extends InteractionHandler {
 				if (!response?.data?.idList) {
 					span.setAttribute("command.status", "failed");
 					span.setAttribute("command.status_reason", "invalid_trello_response");
+					span.setStatus({ code: 2, message: "invalid_trello_response" });
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "Unable to fetch Trello card data.\nPlease use the bug report command if the issue persists.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -229,10 +233,10 @@ export class ModalHandler extends InteractionHandler {
 				if (!District) {
 					span.setAttribute("command.status", "failed");
 					span.setAttribute("command.status_reason", "district_not_found");
+					span.setStatus({ code: 2, message: "district_not_found" });
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "Unable to find district.\nPlease use the bug report command if the issue persists.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -245,12 +249,12 @@ export class ModalHandler extends InteractionHandler {
 							return managers;
 						} catch (error) {
 							span.setAttribute("command.status", "failed");
+							span.setAttribute("command.status_reason", "district_managers_fetch_failed");
 							span.setStatus({ code: 2, message: "district_managers_fetch_failed" });
 							Sentry.captureException(error);
 
-							await interaction.reply({
+							await interaction.editReply({
 								content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
-								flags: ["Ephemeral"],
 							});
 
 							return null;
@@ -263,10 +267,10 @@ export class ModalHandler extends InteractionHandler {
 				if (DistrictManagers.length == 0) {
 					span.setAttribute("command.status", "failed");
 					span.setAttribute("command.status_reason", "no_district_managers");
+					span.setStatus({ code: 2, message: "no_district_managers" });
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -303,19 +307,17 @@ export class ModalHandler extends InteractionHandler {
 						)
 
 						childSpan.setStatus({ code: 1 });
+						childSpan.setAttribute("property.publish_trello_card.status", "success");
 						return publishedCard;
 					}
 					catch (error) {
+						childSpan.setAttribute("property.publish_trello_card.status", "failed");
+						childSpan.setAttribute("property.publish_trello_card.status_reason", "trello_card_publish_failed");
 						childSpan.setStatus({ code: 2, message: "trello_card_publish_failed" });
-
-						span.setAttribute("command.status", "failed");
-						span.setAttribute("command.status_reason", "trello_card_publish_failed");
-
 						Sentry.captureException(error);
 
-						await interaction.reply({
+						await interaction.editReply({
 							content: "There was an error while processing your request.",
-							flags: ["Ephemeral"],
 						});
 
 						return null;
@@ -323,6 +325,8 @@ export class ModalHandler extends InteractionHandler {
 				});
 
 				if (!NewCard) {
+					span.setAttribute("command.status", "failed");
+					span.setAttribute("command.status_reason", "trello_card_publish_failed");
 					return;
 				}
 
@@ -369,9 +373,8 @@ export class ModalHandler extends InteractionHandler {
 					span.setAttribute("command.status", "failed");
 					span.setAttribute("command.status_reason", "land_submissions_channel_not_found");
 
-					return interaction.reply({
+					return interaction.editReply({
 						content: "There was an error while processing your request, but it was uploaded to the Trello successfully.\nPlease use the bug report command to report this issue.",
-						flags: ["Ephemeral"],
 					});
 				}
 
@@ -380,9 +383,8 @@ export class ModalHandler extends InteractionHandler {
 				span.setAttribute("submission.channel_id", channel.id);
 				span.setAttribute("command.status", "success");
 
-				await interaction.reply({
+				await interaction.editReply({
 					content: "Your submission was received successfully!",
-					flags: ["Ephemeral"],
 				});
 
 				span.setStatus({ code: 1 });
@@ -393,9 +395,8 @@ export class ModalHandler extends InteractionHandler {
 				span.setStatus({ code: 2, message: "unhandled_exception" });
 				Sentry.captureException(error);
 
-				return interaction.reply({
+				return interaction.editReply({
 					content: "There was an error while processing your request.",
-					flags: ["Ephemeral"],
 				});
 			}
 		});
