@@ -54,10 +54,10 @@ export class SentryHelper {
 		}
 
 		// 3. Optional: Add user info to the global Sentry scope
-		Sentry.setUser({
-			id: interaction.user.id,
-			username: interaction.user.username,
-		});
+		// Sentry.setUser({
+		// 	id: interaction.user.id,
+		// 	username: interaction.user.username,
+		// });
 
 		return data;
 	}
