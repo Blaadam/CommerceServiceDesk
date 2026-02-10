@@ -15,7 +15,7 @@ import Sentry from "@sentry/node";
 	description: "Sends a message that an individual passed their Business Permit Application",
 	cooldownDelay: 5_000,
 })
-export default class ViewHistoryCommand extends Command {
+export default class NewPermitCommand extends Command {
 	public override registerApplicationCommands(
 		registry: ApplicationCommandRegistry
 	) {
