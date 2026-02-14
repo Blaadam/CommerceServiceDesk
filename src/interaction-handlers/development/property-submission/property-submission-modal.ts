@@ -143,14 +143,14 @@ export class ModalHandler extends InteractionHandler {
                 });
             }
 
-            // await channel.send({
-            //     content: `New property submission request by: ${interaction.user.toString()}`,
-            //     embeds: [embed],
-            //     components: [actionRow],
-            //     files: [
-            //         new AttachmentBuilder(fileBuffer, { name: fileName })
-            //     ]
-            // });
+            await channel.send({
+                content: `New property submission request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
+                embeds: [embed],
+                components: [actionRow],
+                files: [
+                    new AttachmentBuilder(fileBuffer, { name: fileName })
+                ]
+            });
 
             Sentry.metrics.count("property.development.submission", 1, {
                 attributes: {

@@ -2,6 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { DMChannel, Embed, EmbedBuilder, User, type ButtonInteraction } from 'discord.js';
 import Sentry from '@sentry/node';
+import { getUserIdFromString } from '../../../shared/useridFromString';
 
 @ApplyOptions({
   name: "approve-property-submission",
@@ -21,10 +22,14 @@ export class ButtonHandler extends InteractionHandler {
   }
 
   public async run(interaction: ButtonInteraction) {
-    const submitter: User = interaction.message.mentions.users.first();
     const embed: Embed = interaction.message.embeds[0];
+    const submitterId: string = getUserIdFromString(interaction.message.content);
 
-    const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+    if (!submitterId) {
+      return await interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+    }
+
+    const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
 
     const dmChannel: DMChannel = await submitter.createDM();
 
@@ -59,6 +64,8 @@ export class ButtonHandler extends InteractionHandler {
         "submitter.tag": submitter.tag,
       }
     });
+
+    const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
 
     return interaction.reply({
       content: `You have approved the property submission for ${landPermit}.`,

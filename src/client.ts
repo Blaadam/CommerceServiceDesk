@@ -64,6 +64,10 @@ global.ChannelIDs = {
 	blmRevokeLand: "1089647073852403802",
 };
 
+global.RoleIDs = {
+	v2Devs: "1410028851110740029",
+};
+
 global.mainServer = process.env.MAIN_GUILD_ID;
 
 //// END OF CONFIGURATION ////

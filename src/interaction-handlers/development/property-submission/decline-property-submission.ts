@@ -1,6 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { LabelBuilder, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextInputStyle, User, type ButtonInteraction } from 'discord.js';
+import { getUserIdFromString } from '../../../shared/useridFromString';
 
 @ApplyOptions({
 	name: "decline-property-submission",
@@ -21,7 +22,18 @@ export class ButtonHandler extends InteractionHandler {
 
 	public async run(interaction: ButtonInteraction) {
 		const messageId: string = interaction.message.id;
-		const submitter: User = interaction.message.mentions.users.first();
+
+		const submitterId: string | undefined = getUserIdFromString(interaction.message.content);
+
+		if (!submitterId) {
+			return interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+		}
+
+		const submitter: User | undefined = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
+
+		if (!submitter) {
+			return interaction.reply({ content: "Could not find the submitter from the message mentions.", ephemeral: true });
+		}
 
 		const declineModal = new ModalBuilder()
 			.setCustomId(`decline-dev-modal-${messageId}`)

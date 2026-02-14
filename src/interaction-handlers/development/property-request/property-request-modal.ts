@@ -86,7 +86,7 @@ export class ModalHandler extends InteractionHandler {
         }
 
         await channel.send({
-            content: `New property request by: ${interaction.user.toString()}`,
+            content: `New property request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
             embeds: [embed],
             components: [actionRow],
         });

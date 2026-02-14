@@ -16,6 +16,7 @@ import {
 import Sentry from "@sentry/node";
 
 import { ApplyOptions } from "@sapphire/decorators";
+import { getUserIdFromString } from "../../../shared/useridFromString";
 
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
@@ -55,7 +56,13 @@ export class ModalHandler extends InteractionHandler {
 
         const message: Message = await channel.messages.fetch(messageId);
 
-        const submitter: User | undefined = message.mentions.users.first();
+        const submitterId: string | undefined = getUserIdFromString(message.content);
+        
+        if (!submitterId) {
+            return interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+        }
+
+        const submitter: User | undefined = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
 
         if (!submitter) {
             return interaction.reply({ content: "Could not find the submitter from the message mentions.", ephemeral: true });
