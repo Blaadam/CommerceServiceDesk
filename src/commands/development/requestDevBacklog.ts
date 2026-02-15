@@ -12,7 +12,7 @@ import Sentry from "@sentry/node";
 const BACKLOG_PAGE_SIZE = 41;
 
 @ApplyOptions<Command.Options>({
-    name: "request-backlog",
+    name: "request-dev-backlog",
     description: "View the backlog of property requests.",
     cooldownDelay: 5_000,
 })
@@ -31,8 +31,8 @@ export default class ViewHistoryCommand extends Command {
         await interaction.deferReply();
 
         return SentryHelper.tracer(interaction, {
-            name: "Request Backlog Command",
-            op: "command.requestBacklog",
+            name: "Request Dev Backlog Command",
+            op: "command.requestDevBacklog",
         }, async (span: Sentry.Span) => {
             span.setAttribute("channel.id", global.ChannelIDs.devSupportTickets);
 
@@ -78,10 +78,8 @@ export default class ViewHistoryCommand extends Command {
                 }
 
                 const embed = message.embeds[0];
-                // const title = embed.title ?? "No Title";
-                // const description = embed.description ?? "No Description";
-
                 const newEmbed = EmbedBuilder.from(embed)
+                
                 embeds.push(newEmbed);
             }
 

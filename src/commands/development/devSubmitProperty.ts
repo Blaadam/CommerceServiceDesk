@@ -1,7 +1,9 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
+    FileUploadBuilder,
     LabelBuilder,
     ModalBuilder,
+    TextDisplayBuilder,
     TextInputBuilder,
     TextInputStyle,
     type ChatInputCommandInteraction,
@@ -9,9 +11,9 @@ import {
 import { ApplyOptions } from "@sapphire/decorators";
 
 @ApplyOptions<Command.Options>({
-    name: "request-property",
-    description: "Make a request for a property file.",
-    cooldownDelay: 2_500,
+    name: "dev-submit-property",
+    description: "Submit a property file for review.",
+    cooldownDelay: 5_000,
 })
 export default class ViewHistoryCommand extends Command {
     public override registerApplicationCommands(
@@ -26,8 +28,8 @@ export default class ViewHistoryCommand extends Command {
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
         const modal = new ModalBuilder()
-            .setCustomId("property-request-modal")
-            .setTitle("Property Request");
+            .setCustomId("property-submission-modal")
+            .setTitle("Property Submission");
 
         const landPermitLabel = new LabelBuilder()
             .setLabel("BLM Land Permit")
@@ -35,17 +37,30 @@ export default class ViewHistoryCommand extends Command {
                 new TextInputBuilder()
                     .setCustomId("landPermit")
                     .setPlaceholder("[LINK TO LAND MANAGEMENT DATABASE PROPERTY LISTING]")
-                    .setStyle(TextInputStyle.Paragraph)
+                    .setStyle(TextInputStyle.Short)
                     .setRequired(true)
             );
 
-        const propertyIntentionsLabel = new LabelBuilder()
-            .setLabel("Property Intentions")
+        const textDisplayLabel = new TextDisplayBuilder()
+            .setContent("Ensure the property file is in .rbxm format. Your submission will be declined if it includes the wrong format.");
+
+        const propertyFileLabel = new LabelBuilder()
+            .setLabel("Property File")
+            .setFileUploadComponent(
+                new FileUploadBuilder()
+                    .setCustomId("propertyFile")
+                    .setRequired(true)
+                    .setMinValues(1)
+                    .setMaxValues(1)
+            );
+
+        const bannerImageLabel = new LabelBuilder()
+            .setLabel("Exterior Banner Image")
             .setTextInputComponent(
                 new TextInputBuilder()
-                    .setCustomId("propertyIntentions")
-                    .setPlaceholder("[INTENTIONS]")
-                    .setStyle(TextInputStyle.Paragraph)
+                    .setCustomId("bannerImage")
+                    .setPlaceholder("rbxassetid://1234567890")
+                    .setStyle(TextInputStyle.Short)
                     .setRequired(true)
             );
 
@@ -58,7 +73,9 @@ export default class ViewHistoryCommand extends Command {
                     .setStyle(TextInputStyle.Paragraph)
             );
 
-        modal.addLabelComponents(landPermitLabel, propertyIntentionsLabel, furtherInformationLabel);
+        modal.addLabelComponents(landPermitLabel);
+        modal.addTextDisplayComponents(textDisplayLabel);
+        modal.addLabelComponents(propertyFileLabel, bannerImageLabel, furtherInformationLabel);
         return await interaction.showModal(modal);
     }
 }
