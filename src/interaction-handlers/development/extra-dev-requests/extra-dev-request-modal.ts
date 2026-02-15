@@ -46,7 +46,7 @@ export class ModalHandler extends InteractionHandler {
 
     public async run(interaction: ModalSubmitInteraction) {
         const businessLicense: string = interaction.fields.getTextInputValue("businessLicense");
-        const propertyFiles = interaction.fields.getUploadedFiles("extraFiles", true);
+        const propertyFiles = interaction.fields.getUploadedFiles("extraFiles");
         const furtherInformation: string = interaction.fields.getTextInputValue("furtherInformation");
 
         return SentryHelper.tracer(interaction, {
@@ -62,7 +62,7 @@ export class ModalHandler extends InteractionHandler {
 
             const urls = {} as Record<string, string>;
 
-            if (propertyFiles.size > 0) {
+            if (propertyFiles?.size > 0) {
                 span.setAttribute("file.attached", true);
                 span.setAttribute("file.count", propertyFiles.size);
 
@@ -147,7 +147,7 @@ export class ModalHandler extends InteractionHandler {
                 embeds: [embed],
                 components: [actionRow],
                 files: [
-                    ...propertyFiles.map(file => new AttachmentBuilder(file.url).setName(file.name)),
+                    ...propertyFiles?.map(file => new AttachmentBuilder(file.url).setName(file.name)),
                 ]
             });
 
