@@ -4,11 +4,13 @@ import {
 } from "@sapphire/framework";
 import {
     ActionRowBuilder,
+    Attachment,
     AttachmentBuilder,
     ButtonBuilder,
     ButtonStyle,
     Channel,
     EmbedBuilder,
+    ReadonlyCollection,
     TextChannel,
     type ModalSubmitInteraction,
 } from "discord.js";
@@ -46,21 +48,21 @@ export class ModalHandler extends InteractionHandler {
 
     public async run(interaction: ModalSubmitInteraction) {
         const businessLicense: string = interaction.fields.getTextInputValue("businessLicense");
-        const propertyFiles = interaction.fields.getUploadedFiles("extraFiles");
+        const propertyFiles: ReadonlyCollection<string, Attachment> = interaction.fields.getUploadedFiles("extraFiles");
         const furtherInformation: string = interaction.fields.getTextInputValue("furtherInformation");
 
         return SentryHelper.tracer(interaction, {
             name: "Extra Dev Request Modal",
             op: "modal.extraDevRequest",
         }, async (span: any) => {
-            const rbxUsername = SpliceUsername(interaction.user.displayName);
+            const rbxUsername: string = SpliceUsername(interaction.user.displayName);
 
             span.setAttribute("submitter.id", interaction.user.id);
             span.setAttribute("submitter.tag", interaction.user.tag);
             span.setAttribute("rbx.username", rbxUsername);
             span.setAttribute("business.license", businessLicense);
 
-            const urls = {} as Record<string, string>;
+            const urls: Record<string, string> = {};
 
             if (propertyFiles?.size > 0) {
                 span.setAttribute("file.attached", true);
@@ -91,8 +93,8 @@ export class ModalHandler extends InteractionHandler {
             }
 
             for (const [fileName, url] of Object.entries(urls)) {
-                const fileContent = await fetch(url).then(res => res.arrayBuffer());
-                const fileBuffer = Buffer.from(fileContent);
+                const fileContent: ArrayBuffer = await fetch(url).then(res => res.arrayBuffer());
+                const fileBuffer: Buffer<ArrayBuffer> = Buffer.from(fileContent);
 
                 Sentry.getCurrentScope().addAttachment({
                     filename: fileName,
@@ -142,13 +144,13 @@ export class ModalHandler extends InteractionHandler {
                 });
             }
 
+            const filesToUpload = propertyFiles?.map(file => new AttachmentBuilder(file.url).setName(file.name)) ?? [];
+
             await channel.send({
                 content: `New extra dev request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
                 embeds: [embed],
                 components: [actionRow],
-                files: [
-                    ...propertyFiles?.map(file => new AttachmentBuilder(file.url).setName(file.name)),
-                ]
+                files: filesToUpload
             });
 
             Sentry.metrics.count("extra.development.submission", 1, {
