@@ -95,8 +95,11 @@ export async function create_deadline_announcement(client: Client) {
     const currentDate = new Date();
     const nextDeadline = getNextDeadline(new Date());
 
+    const deadlineTimestamp = new Date(nextDeadline.year, nextDeadline.month, nextDeadline.day, 23, 59, 59).getTime();
+
     const NoticeDesc = NOTICE_DESCRIPTION.trim()
-        .replace("FORMAT_SUBMISSION_DATE", `${nextDeadline.year}-${padToTwoDigits(nextDeadline.month + 1)}-${padToTwoDigits(nextDeadline.day)}`)
+        .replace("FORMAT_SUBMISSION_DATE", `<t:${Math.floor(deadlineTimestamp / 1000)}:F>`);
+        // .replace("FORMAT_SUBMISSION_DATE", `${nextDeadline.year}-${padToTwoDigits(nextDeadline.month + 1)}-${padToTwoDigits(nextDeadline.day)}`)
 
     const noticeContainer = new ContainerBuilder()
         .setAccentColor(global.embeds.accentColors.blm)
