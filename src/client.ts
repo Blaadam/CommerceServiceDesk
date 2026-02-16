@@ -66,6 +66,9 @@ global.ChannelIDs = {
 
 global.RoleIDs = {
 	v2Devs: "1410028851110740029",
+	docm_fsLeadership: "1025174786101485588",
+	docm_fsDeveloper: "1096981386574966885",
+	noyra_seniorMgmt: "1200919958146793532",
 };
 
 global.mainServer = process.env.MAIN_GUILD_ID;

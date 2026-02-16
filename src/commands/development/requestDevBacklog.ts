@@ -1,6 +1,8 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
+    Collection,
     EmbedBuilder,
+    Message,
     TextChannel,
     type ChatInputCommandInteraction,
 } from "discord.js";
@@ -8,6 +10,7 @@ import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils";
 
 import Sentry from "@sentry/node";
+import { retrieveBacklog } from "../../shared/retrieve-backlog";
 
 const BACKLOG_PAGE_SIZE = 41;
 
@@ -36,37 +39,18 @@ export default class ViewHistoryCommand extends Command {
         }, async (span: Sentry.Span) => {
             span.setAttribute("channel.id", global.ChannelIDs.devSupportTickets);
 
-            const channel = interaction.client.channels.cache.get(global.ChannelIDs.devSupportTickets);
-            if (!channel || !(channel instanceof TextChannel)) {
+            const backlog: Collection<string, Message> = await retrieveBacklog(
+                interaction.client,
+                global.ChannelIDs.devSupportTickets,
+            );
+
+            if (!backlog || backlog.size === 0) {
                 span.setAttribute("command.status", "failed");
-                span.setStatus({ code: 2, message: "internal_error" });
-                span.setAttribute("error.reason", "ChannelNotFound");
-
-                await interaction.editReply("The dev support tickets channel could not be found.");
-                return;
-            }
-
-            const messages = await channel.messages.fetch({ limit: BACKLOG_PAGE_SIZE + 1 });
-            if (!messages) {
-                span.setAttribute("command.status", "failed");
-                span.setStatus({ code: 2, message: "internal_error" });
-                span.setAttribute("error.reason", "MessagesNotFound");
-
-                await interaction.editReply("Could not fetch messages from the dev support tickets channel.");
-                return;
-            }
-
-            console.log(`Fetched ${messages.size} messages from the dev support tickets channel.`);
-            span.setAttribute("messages.fetched", messages.size);
-
-            const backlog = messages.filter((message) => message.embeds.length > 0 && message.embeds[0].color === global.embeds.accentColors.mgmt);
-            span.setAttribute("backlog.size", backlog.size);
-
-            if (backlog.size === 0) {
                 await interaction.editReply("The backlog is currently empty.");
                 return;
             }
 
+            span.setAttribute("backlog.size", backlog.size);
             const isFull = backlog.size > BACKLOG_PAGE_SIZE;
             span.setAttribute("backlog.isFull", isFull);
 
@@ -78,8 +62,7 @@ export default class ViewHistoryCommand extends Command {
                 }
 
                 const embed = message.embeds[0];
-                const newEmbed = EmbedBuilder.from(embed)
-                
+                const newEmbed = EmbedBuilder.from(embed);
                 embeds.push(newEmbed);
             }
 

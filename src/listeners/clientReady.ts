@@ -1,8 +1,156 @@
-import { Listener } from "@sapphire/framework";
-import { ActivityType, type Client } from "discord.js";
+import { Container, Listener } from "@sapphire/framework";
+import { ActivityType, ContainerBuilder, DMChannel, User, type Client } from "discord.js";
 import Sentry from "@sentry/node";
+import { promises } from "fs"
+import { retrieveBacklog } from "../shared/retrieve-backlog";
+// const fs = require('fs').promises;
+const path = require('path');
 
-const NODE_ENV = process.env.NODE_ENV ?? "development";
+const NODE_ENV: string = process.env.NODE_ENV ?? "development";
+
+const WEEKLY_CHECK_FILE = '/app/data/weeklyCheck.json';
+const MINIMUM_CHECK_THRESHHOLD_DAYS = 2;
+
+const templateMessage = `
+
+# CSD | SLA Breach Notice
+
+Dear Developer,
+
+This is an SLA Breach Notice from the Commerce Service Desk.
+
+Current number of open requests: **FORMAT_NUMBER_OF_REQUESTS**
+
+You can view and track all open requests via the following channel:
+> FORMAT_LINK_TO_CHANNEL
+
+
+SLA follows me everywhere,
+
+Commerce Service Desk
+Queue Manager / Artūrs
+-# CSD is ran and developed by Nøyra Oy - https://discord.gg/5SdTjEKCdM
+
+`
+
+function setStatus(client: Client, container: Container) {
+	if (NODE_ENV === "production") {
+		client.user.setActivity("out for illegal business operations", { type: ActivityType.Watching });
+		client.user.setStatus('idle')
+	} else {
+		client.user.setActivity("under maintenance, please avoid using this service", { type: ActivityType.Custom });
+		client.user.setStatus('dnd')
+
+		const guilds: string = client.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join(", ");
+		container.logger.info(
+			`Currently in ${client.guilds.cache.size} servers: ${guilds}`
+		);
+	}
+}
+
+async function checkWeeklyMonday() {
+	const now = new Date();
+	if (now.getDay() != 1 || now.getHours() < 12) {
+		return false;
+	}
+
+	try {
+		const data = await promises.readFile(WEEKLY_CHECK_FILE, 'utf-8');
+		const { timestamp } = JSON.parse(data);
+		const lastCheckDate = new Date(timestamp);
+		const daysSinceLastCheck = (now.getTime() - lastCheckDate.getTime()) / (1000 * 60 * 60 * 24);
+
+		console.log(`Days since last weekly check: ${daysSinceLastCheck.toFixed(2)}`);
+		console.log(`Last check was on: ${lastCheckDate.toISOString()}`);
+		console.log(`Current time is: ${now.toISOString()}`);
+		console.log(`Minimum threshold for check: ${MINIMUM_CHECK_THRESHHOLD_DAYS} days`);
+		console.log(`Is it time for a new check? ${daysSinceLastCheck >= MINIMUM_CHECK_THRESHHOLD_DAYS}`);
+
+		if (daysSinceLastCheck >= MINIMUM_CHECK_THRESHHOLD_DAYS) {
+			return true;
+		}
+		return false;
+	} catch (error) {
+		console.log("No previous check found or error reading file, proceeding with check.");
+		console.warn(error)
+		// return true;
+	}
+
+	return true;
+}
+
+async function logWeek(usersMessaged: User[]) {
+	const now = new Date();
+	const logEntry = {
+		timestamp: now.toISOString(),
+		usersMessaged: usersMessaged.map(user => ({ id: user.id, tag: user.tag }))
+	};
+
+	await promises.mkdir(path.dirname(WEEKLY_CHECK_FILE), { recursive: true });
+	await promises.writeFile(WEEKLY_CHECK_FILE, JSON.stringify(logEntry) + '\n');
+}
+
+const SEARCH_ROLE_IDS = [
+	global.RoleIDs.v2Devs,
+	global.RoleIDs.docm_fsLeadership,
+	global.RoleIDs.docm_fsDeveloper,
+	global.RoleIDs.noyra_seniorMgmt,
+]
+
+async function runWeeklyCheck(client: Client, container: Container) {
+	const timeForCheck = await checkWeeklyMonday();
+	if (!timeForCheck) {
+		return;
+	}
+
+	// check for users with a role across all guilds
+	const usersToMessage: User[] = [];
+	for (const guild of client.guilds.cache.values()) {
+		await guild.members.fetch(); // fetch all members to ensure roles are available
+		const membersWithRoles = guild.members.cache.filter(member =>
+			member.roles.cache.some(role => SEARCH_ROLE_IDS.includes(role.id))
+		);
+		usersToMessage.push(...membersWithRoles.map(member => member.user));
+	}
+
+	// eliminate duplicate users
+	const uniqueUsersToMessage = Array.from(new Set(usersToMessage.map(user => user.id)))
+		.map(id => usersToMessage.find(user => user.id === id)) as User[];
+
+	const backlog = await retrieveBacklog(client);
+	const backlog_size = backlog.size;
+
+	if (backlog_size === 0) {
+		container.logger.info("No open requests in backlog, skipping weekly check messaging.");
+		return;
+	}
+
+	container.logger.info(`Messaging ${uniqueUsersToMessage.length} users about the backlog of ${backlog_size} requests.`);
+
+	const messageContainer = new ContainerBuilder()
+		.addTextDisplayComponents((textDisplay) =>
+			textDisplay.setContent(templateMessage.trim()
+				.replace("FORMAT_NUMBER_OF_REQUESTS", backlog_size.toString())
+				.replace("FORMAT_LINK_TO_CHANNEL", `<#${global.ChannelIDs.devSupportTickets}>`))
+		)
+
+	// message users telling them about the length of a backlog
+	for (const user of uniqueUsersToMessage) {
+		try {
+
+			const dmChannel: DMChannel = await user.createDM();
+			await dmChannel.send({
+				components: [messageContainer],
+				flags: ["IsComponentsV2"]
+			});
+		} catch (error) {
+			container.logger.error(`Failed to send message to ${user.tag}:`, error);
+			Sentry.captureException(error);
+		}
+	}
+
+	await logWeek(uniqueUsersToMessage);
+}
 
 export class ClientReadyListener extends Listener {
 	public run(client: Client) {
@@ -11,18 +159,7 @@ export class ClientReadyListener extends Listener {
 			`Ready! Logged in as ${tag}`
 		);
 
-		if (NODE_ENV === "production") {
-			client.user.setActivity("out for illegal business operations", { type: ActivityType.Watching });
-			client.user.setStatus('idle')
-		} else {
-			client.user.setActivity("under maintenance, please avoid using this service", { type: ActivityType.Custom });
-			client.user.setStatus('dnd')
-
-			const guilds: string = client.guilds.cache.map(guild => `${guild.name} (${guild.id})`).join(", ");
-			this.container.logger.info(
-				`Currently in ${client.guilds.cache.size} servers: ${guilds}`
-			);
-		}
+		setStatus(client, this.container);
 
 		const updatePingLatencyMetric = () => {
 			const ping = Math.round(this.container.client.ws.ping ?? 0);
@@ -31,5 +168,17 @@ export class ClientReadyListener extends Listener {
 
 		updatePingLatencyMetric();
 		setInterval(updatePingLatencyMetric, 15_000);
+
+		setInterval(async () => {
+			try {
+				console.log("Running weekly check...");
+				await runWeeklyCheck(client, this.container);
+				console.log("Weekly check completed.");
+			}
+			catch (error) {
+				this.container.logger.error("Error during weekly check:", error);
+				Sentry.captureException(error);
+			}
+		}, 6_000);
 	}
 }
