@@ -3,6 +3,7 @@ import { ActivityType, ButtonBuilder, ContainerBuilder, DMChannel, User, type Cl
 import Sentry from "@sentry/node";
 import { promises } from "fs"
 import { retrieveBacklog } from "../shared/retrieve-backlog";
+import { checkIsReadyForDeadlineAnnouncement, create_deadline_announcement } from "../shared/property-deadlines";
 const path = require('path');
 
 const NODE_ENV: string = process.env.NODE_ENV ?? "development";
@@ -190,5 +191,19 @@ export class ClientReadyListener extends Listener {
 				Sentry.captureException(error);
 			}
 		}, 60_000);
+
+		setInterval(async () => {
+			try {
+				const isReady = await checkIsReadyForDeadlineAnnouncement();
+				if (isReady) {
+					create_deadline_announcement(client);
+					this.container.logger.info("Deadline announcement created successfully.");
+				}
+			}
+			catch (error) {
+				this.container.logger.error("Error during deadline announcement check:", error);
+				Sentry.captureException(error);
+			}
+		}, 90_000);
 	}
 }

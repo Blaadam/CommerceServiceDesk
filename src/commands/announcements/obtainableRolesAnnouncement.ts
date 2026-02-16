@@ -45,7 +45,7 @@ export default class ViewHistoryCommand extends Command {
                 .setName(this.name)
                 .setDescription(this.description)
                 .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-        });
+        }, { guildIds: [ "1200919106266861598" ] });
     }
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
@@ -101,7 +101,7 @@ export default class ViewHistoryCommand extends Command {
                 flags: ["Ephemeral"],
             });
         }
-        
+
         channel.send({ components: [rolesContainer], flags: MessageFlagsBitField.Flags.IsComponentsV2 });
 
         return interaction.reply({

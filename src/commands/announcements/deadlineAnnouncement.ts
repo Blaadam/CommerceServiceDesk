@@ -13,6 +13,21 @@ import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils";
 import Sentry from "@sentry/node";
 
+const NOTICE_TITLE = "Notice of Deadline for Activity Reports";
+const NOTICE_DESCRIPTION = `
+Attention Land Owners
+
+We want to inform you that the deadline for submitting your activity reports is quickly approaching. To ensure compliance, we kindly request all landowners to submit their activity reports by **FORMAT_SUBMISSION_DATE**.
+Your prompt cooperation will greatly assist us in maintaining accurate records and making informed decisions.
+
+Please click the green button or use the /newactivity command to submit notice of activity
+
+Thank you for your attention to this matter. We greatly appreciate your cooperation in helping us effectively manage our land resources.
+
+Sincerely,
+Firestone Bureau of Land Management
+`
+
 @ApplyOptions<Command.Options>({
 	name: "land-deadline",
 	description: "Create a deadline announcement for Activity Submissions",

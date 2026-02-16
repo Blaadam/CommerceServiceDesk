@@ -38,6 +38,7 @@ global.embeds = {
 	embedColors: {
 		mgmt: "#f6ca43",
 		activity: "#00597f",
+		blm: "#6c584b",
 		default: "#0070a0",
 		error: "#ff0000",
 		success: "#00ff00",
@@ -45,6 +46,7 @@ global.embeds = {
 	accentColors: {
 		mgmt: 0xf6ca43,
 		activity: 0x00597f,
+		blm: 0x6c584b,
 		default: 0x0070a0,
 		error: 0xff0000,
 		success: 0x00ff00,
@@ -69,6 +71,7 @@ global.RoleIDs = {
 	v2Devs: "1410028851110740029",
 	docm_fsLeadership: "1025174786101485588",
 	docm_fsDeveloper: "1096981386574966885",
+	docm_lm_notif_opt: "1164856752181870642",
 	noyra_seniorMgmt: "1200919958146793532",
 };
 

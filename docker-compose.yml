@@ -17,3 +17,5 @@ services:
 
       - TRELLO_KEY=your_trello_key
       - TRELLO_TOKEN=your_trello_token
+    volumes:
+      - ./data/:/app/data/
