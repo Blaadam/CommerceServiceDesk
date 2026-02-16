@@ -3,7 +3,6 @@ import { ActivityType, ContainerBuilder, DMChannel, User, type Client } from "di
 import Sentry from "@sentry/node";
 import { promises } from "fs"
 import { retrieveBacklog } from "../shared/retrieve-backlog";
-// const fs = require('fs').promises;
 const path = require('path');
 
 const NODE_ENV: string = process.env.NODE_ENV ?? "development";
@@ -23,6 +22,9 @@ Current number of open requests: **FORMAT_NUMBER_OF_REQUESTS**
 
 You can view and track all open requests via the following channel:
 > FORMAT_LINK_TO_CHANNEL
+
+You can view and track all open alternative text-based requests via the following channel:
+> <#${global.ChannelIDs.devSupportTextTickets}>
 
 
 SLA follows me everywhere,
@@ -59,12 +61,6 @@ async function checkWeeklyMonday() {
 		const { timestamp } = JSON.parse(data);
 		const lastCheckDate = new Date(timestamp);
 		const daysSinceLastCheck = (now.getTime() - lastCheckDate.getTime()) / (1000 * 60 * 60 * 24);
-
-		console.log(`Days since last weekly check: ${daysSinceLastCheck.toFixed(2)}`);
-		console.log(`Last check was on: ${lastCheckDate.toISOString()}`);
-		console.log(`Current time is: ${now.toISOString()}`);
-		console.log(`Minimum threshold for check: ${MINIMUM_CHECK_THRESHHOLD_DAYS} days`);
-		console.log(`Is it time for a new check? ${daysSinceLastCheck >= MINIMUM_CHECK_THRESHHOLD_DAYS}`);
 
 		if (daysSinceLastCheck >= MINIMUM_CHECK_THRESHHOLD_DAYS) {
 			return true;
@@ -137,8 +133,7 @@ async function runWeeklyCheck(client: Client, container: Container) {
 	// message users telling them about the length of a backlog
 	for (const user of uniqueUsersToMessage) {
 		try {
-
-			const dmChannel: DMChannel = await user.createDM();
+			const dmChannel: DMChannel = user.dmChannel ?? await user.createDM();
 			await dmChannel.send({
 				components: [messageContainer],
 				flags: ["IsComponentsV2"]
@@ -171,14 +166,12 @@ export class ClientReadyListener extends Listener {
 
 		setInterval(async () => {
 			try {
-				console.log("Running weekly check...");
 				await runWeeklyCheck(client, this.container);
-				console.log("Weekly check completed.");
 			}
 			catch (error) {
 				this.container.logger.error("Error during weekly check:", error);
 				Sentry.captureException(error);
 			}
-		}, 6_000);
+		}, 60_000);
 	}
 }

@@ -60,6 +60,7 @@ global.ChannelIDs = {
 	deadlineAnnouncements: "735894843259355294",
 	landSubmissions: "1089647073852403802",
 	devSupportTickets: "1433519872209322196",
+	devSupportTextTickets: "1096981698052370532",
 	rolesChannel: "735894843259355288",
 	blmRevokeLand: "1089647073852403802",
 };

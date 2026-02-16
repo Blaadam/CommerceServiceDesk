@@ -41,7 +41,7 @@ export default class ViewHistoryCommand extends Command {
 
             const backlog: Collection<string, Message> = await retrieveBacklog(
                 interaction.client,
-                global.ChannelIDs.devSupportTickets,
+                span,
             );
 
             if (!backlog || backlog.size === 0) {
