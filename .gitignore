@@ -5,4 +5,4 @@ node_modules
 /generated/prisma
 
 docker-compose.*.yml
-/data/weeklyCheck.json
+/data
