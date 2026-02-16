@@ -39,6 +39,7 @@ global.embeds = {
 		mgmt: "#f6ca43",
 		activity: "#00597f",
 		blm: "#6c584b",
+		noyra: "#5470c8",
 		default: "#0070a0",
 		error: "#ff0000",
 		success: "#00ff00",
@@ -47,6 +48,7 @@ global.embeds = {
 		mgmt: 0xf6ca43,
 		activity: 0x00597f,
 		blm: 0x6c584b,
+		noyra: 0x5470c8,
 		default: 0x0070a0,
 		error: 0xff0000,
 		success: 0x00ff00,
@@ -59,8 +61,8 @@ global.embeds = {
 };
 
 global.ChannelIDs = {
-	deadlineAnnouncements: "1445046543316025576",
-	// deadlineAnnouncements: "735894843259355294",
+	// deadlineAnnouncements: "1445046543316025576",
+	deadlineAnnouncements: "735894843259355294",
 	landSubmissions: "1089647073852403802",
 	devSupportTickets: "1433519872209322196",
 	devSupportTextTickets: "1096981698052370532",

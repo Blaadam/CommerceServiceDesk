@@ -5,8 +5,6 @@ import {
     ButtonStyle,
     Channel,
     ContainerBuilder,
-    MediaGalleryBuilder,
-    MediaGalleryItemBuilder,
     MessageFlagsBitField,
     PermissionFlagsBits,
     TextChannel,
@@ -72,7 +70,7 @@ export default class ViewHistoryCommand extends Command {
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
         const adContainer = new ContainerBuilder()
-            .setAccentColor(global.embeds.accentColors.default)
+            .setAccentColor(global.embeds.accentColors.noyra)
             .addTextDisplayComponents((textDisplay) =>
                 textDisplay.setContent(
                     `## ${AD_HEADER}`

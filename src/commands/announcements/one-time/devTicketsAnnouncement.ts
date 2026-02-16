@@ -12,11 +12,6 @@ import {
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 
-// const MESSAGE_PART1: string[] = [
-//     "Hello @everyone,",
-//     "We're introducing three optional notification roles that allow you to stay informed about specific updates and announcements relevant to your interests within the Department of Commerce.",
-// ];
-
 const TITLE = "Development Support Tickets";
 const MESSAGE = `
 Hello everyone,
@@ -74,7 +69,7 @@ export default class ViewHistoryCommand extends Command {
     }
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
-        const rolesContainer = new ContainerBuilder()
+        const ticketContainer = new ContainerBuilder()
             .setAccentColor(global.embeds.accentColors.default)
             .addTextDisplayComponents((textDisplay) =>
                 textDisplay.setContent(
@@ -84,14 +79,14 @@ export default class ViewHistoryCommand extends Command {
 
         const messageParts = MESSAGE.split("__SPLIT__");
 
-        rolesContainer.addSeparatorComponents((separator) => separator)
-        rolesContainer.addTextDisplayComponents((textDisplay) =>
+        ticketContainer.addSeparatorComponents((separator) => separator)
+        ticketContainer.addTextDisplayComponents((textDisplay) =>
             textDisplay.setContent(messageParts[0])
         )
 
         for (let i = 0; i < COMMANDS.length; i += 3) {
             for (const command of COMMANDS.slice(i, i + 3)) {
-                rolesContainer.addTextDisplayComponents(
+                ticketContainer.addTextDisplayComponents(
                     (textDisplay) =>
                         textDisplay.setContent(
                             `\`/${command.name}\`${command.tag ? ` (${command.tag})` : ""}\n${command.description}`
@@ -100,11 +95,11 @@ export default class ViewHistoryCommand extends Command {
             }
         }
 
-        rolesContainer.addTextDisplayComponents((textDisplay) =>
+        ticketContainer.addTextDisplayComponents((textDisplay) =>
             textDisplay.setContent(messageParts[1])
         )
 
-        rolesContainer.addSeparatorComponents((separator) => separator);
+        ticketContainer.addSeparatorComponents((separator) => separator);
 
         const linkButtons = new ActionRowBuilder<ButtonBuilder>();
 
@@ -128,10 +123,10 @@ export default class ViewHistoryCommand extends Command {
             )
         }
 
-        rolesContainer.addActionRowComponents(linkButtons);
-        rolesContainer.addActionRowComponents(actionButtons);
+        ticketContainer.addActionRowComponents(linkButtons);
+        ticketContainer.addActionRowComponents(actionButtons);
 
-        rolesContainer.addTextDisplayComponents((textDisplay) =>
+        ticketContainer.addTextDisplayComponents((textDisplay) =>
             textDisplay.setContent(
                 `-# Last updated <t:${Math.floor(Date.now() / 1000)}:F>`
             )
@@ -145,7 +140,7 @@ export default class ViewHistoryCommand extends Command {
             });
         }
 
-        await channel.send({ components: [rolesContainer], flags: MessageFlagsBitField.Flags.IsComponentsV2 });
+        await channel.send({ components: [ticketContainer], flags: MessageFlagsBitField.Flags.IsComponentsV2 });
 
         return interaction.reply({
             content: "Sent Message",
