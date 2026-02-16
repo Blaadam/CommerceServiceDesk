@@ -47,6 +47,10 @@ const BUTTONS = [
         .setLabel("Service Portfolio")
         .setStyle(ButtonStyle.Link)
         .setURL("https://twitter.com/NoyraConsulting"),
+    new ButtonBuilder()
+        .setLabel("Business Permit")
+        .setStyle(ButtonStyle.Link)
+        .setURL("https://trello.com/c/w6MdNRAY/")
 ]
 
 @ApplyOptions<Command.Options>({
