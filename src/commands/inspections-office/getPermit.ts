@@ -1,14 +1,10 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
-	DMChannel,
-	GuildMember,
 	PermissionFlagsBits,
-	Role,
 	type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { SentryHelper } from "../../shared/sentry-utils.js";
-import Sentry from "@sentry/node";
 
 @ApplyOptions<Command.Options>({
 	name: "retrieve-permit",

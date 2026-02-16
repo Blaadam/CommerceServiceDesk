@@ -28,19 +28,15 @@ export class AutocompleteHandler extends InteractionHandler {
       span.setAttribute("interaction.userTag", interaction.user?.tag);
 
       try {
-        console.log(`Received autocomplete interaction for command ID ${interaction.commandId} (${interaction.commandName})`);
 
         if (autocompletes[interaction.commandName]) {
-          console.log(`Found autocomplete function for command ${interaction.commandName}, executing...`);
 
           const autocompleteFunction = autocompletes[interaction.commandName];
           const choices = await autocompleteFunction(interaction, span);
           return this.some(choices || []);
         }
 
-        console.warn(`No autocomplete function found for command ${interaction.commandName}`);
-        console.log(autocompletes)
-
+        this.container.logger.warn(`No autocomplete function found for command ${interaction.commandName}`);
         return this.none();
 
       } catch (error) {

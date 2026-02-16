@@ -101,6 +101,7 @@ export default class ViewHistoryCommand extends Command {
                 flags: ["Ephemeral"],
             });
         }
+        
         channel.send({ components: [rolesContainer], flags: MessageFlagsBitField.Flags.IsComponentsV2 });
 
         return interaction.reply({

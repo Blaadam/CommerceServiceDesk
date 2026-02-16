@@ -3,7 +3,6 @@ import {
     Collection,
     EmbedBuilder,
     Message,
-    TextChannel,
     type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
@@ -15,7 +14,7 @@ import { retrieveBacklog } from "../../shared/retrieve-backlog";
 const BACKLOG_PAGE_SIZE = 41;
 
 @ApplyOptions<Command.Options>({
-    name: "request-dev-backlog",
+    name: "dev-request-backlog",
     description: "View the backlog of property requests.",
     cooldownDelay: 5_000,
 })

@@ -4,7 +4,7 @@ import { LabelBuilder, ModalBuilder, TextDisplayBuilder, TextInputBuilder, TextI
 import { getUserIdFromString } from '../../../shared/useridFromString';
 
 @ApplyOptions({
-	name: "decline-extra-dev-request",
+	name: "decline-dev-request-extra",
 })
 export class ButtonHandler extends InteractionHandler {
 	public constructor(ctx: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {

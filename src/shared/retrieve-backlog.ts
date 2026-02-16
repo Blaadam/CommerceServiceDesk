@@ -30,9 +30,6 @@ export async function retrieveBacklog(
         return backlog;
     }
 
-    console.log(
-        `Fetched ${messages.size} messages from the dev support tickets channel.`
-    );
     span?.setAttribute("messages.fetched", messages.size);
 
     backlog = messages.filter(

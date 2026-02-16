@@ -1,5 +1,5 @@
 import { Container, Listener } from "@sapphire/framework";
-import { ActivityType, ContainerBuilder, DMChannel, User, type Client } from "discord.js";
+import { ActivityType, ButtonBuilder, ContainerBuilder, DMChannel, User, type Client } from "discord.js";
 import Sentry from "@sentry/node";
 import { promises } from "fs"
 import { retrieveBacklog } from "../shared/retrieve-backlog";
@@ -87,10 +87,11 @@ async function logWeek(usersMessaged: User[]) {
 }
 
 const SEARCH_ROLE_IDS = [
-	global.RoleIDs.v2Devs,
-	global.RoleIDs.docm_fsLeadership,
-	global.RoleIDs.docm_fsDeveloper,
-	global.RoleIDs.noyra_seniorMgmt,
+	// global.RoleIDs.v2Devs,
+	// global.RoleIDs.docm_fsLeadership,
+	// global.RoleIDs.docm_fsDeveloper,
+	// global.RoleIDs.noyra_seniorMgmt,
+	"1200919816811331807" // Noyra CTO
 ]
 
 async function runWeeklyCheck(client: Client, container: Container) {
@@ -129,6 +130,22 @@ async function runWeeklyCheck(client: Client, container: Container) {
 				.replace("FORMAT_NUMBER_OF_REQUESTS", backlog_size.toString())
 				.replace("FORMAT_LINK_TO_CHANNEL", `<#${global.ChannelIDs.devSupportTickets}>`))
 		)
+		.addActionRowComponents((actionRow) =>
+			actionRow.addComponents(
+				new ButtonBuilder()
+					.setLabel("View Open Requests")
+					.setStyle(5) // Link style
+					.setURL(`https://discord.com/channels/962005830960562216/1433519872209322196`),
+				new ButtonBuilder()
+					.setLabel("View Text-Based Requests")
+					.setStyle(5) // Link style
+					.setURL(`https://discord.com/channels/735894836577697913/1096981698052370532`),
+				new ButtonBuilder()
+					.setLabel("Support Server")
+					.setStyle(5) // Link style
+					.setURL(`https://discord.gg/5SdTjEKCdM`),
+			)
+		);
 
 	// message users telling them about the length of a backlog
 	for (const user of uniqueUsersToMessage) {

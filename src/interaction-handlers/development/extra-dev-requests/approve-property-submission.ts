@@ -5,7 +5,7 @@ import Sentry from '@sentry/node';
 import { getUserIdFromString } from '../../../shared/useridFromString';
 
 @ApplyOptions({
-  name: "approve-extra-dev-request",
+  name: "approve-dev-request-extra",
 })
 export class ButtonHandler extends InteractionHandler {
   public constructor(ctx: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
