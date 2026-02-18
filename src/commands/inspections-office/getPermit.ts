@@ -23,8 +23,7 @@ export default class RetrievePermitCommand extends Command {
 					option.setName('permit')
 						.setDescription('The business name of the permit to retrieve')
 						.setRequired(true)
-						.setAutocomplete(true))
-				.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages);
+						.setAutocomplete(true));
 		});
 	}
 

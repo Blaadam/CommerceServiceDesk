@@ -3,6 +3,7 @@ import 'dotenv/config'
 import Sentry from "@sentry/node";
 
 import { databaseConnection } from "./database";
+import { rocloud } from "./rocloud";
 const connection = new databaseConnection();
 
 const BOT_SECRET = process.env.BOT_SECRET;
@@ -25,6 +26,10 @@ async function start() {
 		console.error('Failed to login Discord client:', err);
 		process.exit(1);
 	}
+
+	const rocloudInstance = new rocloud();
+	const response = await rocloudInstance.introspect();
+	console.log('RoCloud Introspect Response:', response.data);
 }
 
 start();

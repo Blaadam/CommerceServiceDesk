@@ -44,7 +44,7 @@ const BUTTONS = [
     new ButtonBuilder()
         .setLabel("Service Portfolio")
         .setStyle(ButtonStyle.Link)
-        .setURL("https://twitter.com/NoyraConsulting"),
+        .setURL("https://docs.google.com/presentation/d/1VgXrj63ATSy4E3FMsk_QcMjmowom-_NlmkJ4PM1np0g/edit?usp=sharing"),
     new ButtonBuilder()
         .setLabel("Business Permit")
         .setStyle(ButtonStyle.Link)

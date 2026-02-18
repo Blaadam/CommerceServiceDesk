@@ -43,7 +43,7 @@ async function retrieveAllPermitCards(span?: Sentry.Span) {
 
     // 1. Check if we have valid cached data
     if (cachedCards && (now - lastFetchTime < CACHE_TTL)) {
-        console.log(`[CACHE] Returning ${cachedCards.length} cards from memory.`);
+        // console.log(`[CACHE] Returning ${cachedCards.length} cards from memory.`);
         return cachedCards;
     }
 
@@ -52,7 +52,7 @@ async function retrieveAllPermitCards(span?: Sentry.Span) {
         const url = `https://api.trello.com/1/boards/${BOARD_ID}/cards`;
         span?.setAttribute("trello.url", url);
 
-        console.log(`[API] Fetching fresh data from Trello...`);
+        // console.log(`[API] Fetching fresh data from Trello...`);
         const response = await axios({
             method: 'get',
             url: url + ADDON,
@@ -79,7 +79,7 @@ async function retrieveAllPermitCards(span?: Sentry.Span) {
         span?.setAttribute("cache.newFetchTime", lastFetchTime);
         span?.setAttribute("cache.newCachedCardsCount", cachedCards.length);
 
-        console.log(`[CACHE] Updated cache with ${filteredCards.length} cards.`);
+        // console.log(`[CACHE] Updated cache with ${filteredCards.length} cards.`);
 
         return filteredCards;
     } catch (error) {
@@ -102,7 +102,7 @@ export default async function retrievePermit(interaction: AutocompleteCommand | 
     // Optional: Filter the list based on what the user has typed so far
     // This is the "Auto" part of Autocomplete!
     const focusedValue = interaction.options.getFocused().toLowerCase();
-    console.log(`User is typing: ${focusedValue}, filtering ${options.length} options...`);
+    // console.log(`User is typing: ${focusedValue}, filtering ${options.length} options...`);
 
     span?.setAttribute("autocomplete.focusedValue", focusedValue);
     span?.setAttribute("autocomplete.optionsBeforeFilter", options.length);
