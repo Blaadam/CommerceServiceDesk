@@ -117,7 +117,11 @@ export async function create_deadline_announcement(client: Client) {
         return;
     }
 
-    await channel.send({ components: [noticeContainer], flags: ["IsComponentsV2"] });
+    const message = await channel.send({ components: [noticeContainer], flags: ["IsComponentsV2"] });
+    if (!message) {
+        console.warn("Failed to send message");
+        return;
+    }
 
     try {
         await setFileTimestamp(currentDate);
