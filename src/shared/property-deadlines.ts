@@ -31,36 +31,9 @@ const DEADLINE_DAY_OFFSET = 7;
 const MINIMUM_CHECK_THRESHHOLD_DAYS = 2;
 const DEADLINE_CHECK_FILE = '/app/data/blm_deadline.json';
 
-function padToTwoDigits(num: number): string {
-    return num.toString().padStart(2, '0');
-}
-
-// function getNextDeadline(currentDate: Date): DateObject {
-//     // Setting day to 0 of the NEXT month gives the LAST day of the CURRENT month.
-//     // Example: Feb 2026, 0 -> Feb 28, 2026
-//     const deadlineDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, DEADLINE_DAY_OFFSET);
-
-//     return {
-//         day: deadlineDay.getDate(),
-//         month: deadlineDay.getMonth(),
-//         year: deadlineDay.getFullYear(),
-//     };
-// }
-
 function getNextDeadline(currentDate: Date): DateObject {
     // 1. Get the initial target date (e.g., the last day of the month)
-    const deadlineDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, DEADLINE_DAY_OFFSET);
-
-    // 2. Calculate how many days to move to hit the previous Saturday
-    // .getDay() returns 0 (Sun) to 6 (Sat)
-    const currentDayOfWeek = deadlineDay.getDay();
-
-    // If it's already Saturday (6), adjustment is 0. 
-    // If it's Sunday (0), we go back 1 day.
-    // If it's Friday (5), we go back 6 days to hit the previous Saturday.
-    const daysToSubtract = (currentDayOfWeek + 1) % 7;
-
-    deadlineDay.setDate(deadlineDay.getDate() - daysToSubtract);
+    const deadlineDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
 
     return {
         day: deadlineDay.getDate(),
@@ -81,8 +54,8 @@ function getNoticeDate(deadline: DateObject): DateObject {
     // Create a date object from the deadline
     const date = new Date(deadline.year, deadline.month, deadline.day);
 
-    // Move the date back by the offset * 2, should be 2 weeks before the deadline
-    date.setDate(date.getDate() - DEADLINE_DAY_OFFSET * 2);
+    // Move the date back by the offset, should be 1 week before the deadline
+    date.setDate(date.getDate() - DEADLINE_DAY_OFFSET);
 
     return {
         day: date.getDate(),
@@ -95,11 +68,10 @@ export async function create_deadline_announcement(client: Client) {
     const currentDate = new Date();
     const nextDeadline = getNextDeadline(new Date());
 
-    const deadlineTimestamp = new Date(nextDeadline.year, nextDeadline.month, nextDeadline.day, 23, 59, 59).getTime();
+    const deadlineTimestamp = new Date(nextDeadline.year, nextDeadline.month, nextDeadline.day, 0, 0, 0).getTime();
 
     const NoticeDesc = NOTICE_DESCRIPTION.trim()
         .replace("FORMAT_SUBMISSION_DATE", `<t:${Math.floor(deadlineTimestamp / 1000)}:F>`);
-        // .replace("FORMAT_SUBMISSION_DATE", `${nextDeadline.year}-${padToTwoDigits(nextDeadline.month + 1)}-${padToTwoDigits(nextDeadline.day)}`)
 
     const noticeContainer = new ContainerBuilder()
         .setAccentColor(global.embeds.accentColors.blm)
