@@ -79,8 +79,11 @@ global.RoleIDs = {
 	noyra_seniorMgmt: "1200919958146793532",
 };
 
-global.mainServer = process.env.MAIN_GUILD_ID;
+global.GuildIDs = {
+	mainServer: process.env.MAIN_GUILD_ID,
+	supportServer: "1200919106266861598",
+}
 
 //// END OF CONFIGURATION ////
 
-ApplicationCommandRegistries.setDefaultGuildIds([global.mainServer]);
+ApplicationCommandRegistries.setDefaultGuildIds(Object.values(global.GuildIDs));

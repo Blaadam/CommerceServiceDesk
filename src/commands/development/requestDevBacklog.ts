@@ -26,11 +26,11 @@ export default class ViewHistoryCommand extends Command {
             command
                 .setName(this.name)
                 .setDescription(this.description);
-        });
+        }, { guildIds: [global.GuildIDs.supportServer] });
     }
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: ["Ephemeral"] });
 
         return SentryHelper.tracer(interaction, {
             name: "Request Dev Backlog Command",
@@ -56,7 +56,7 @@ export default class ViewHistoryCommand extends Command {
             var embeds: EmbedBuilder[] = [];
             for (const [, message] of backlog.entries()) {
                 if (embeds.length >= 10) {
-                    await interaction.followUp({ embeds });
+                    await interaction.followUp({ embeds, flags: ["Ephemeral"] });
                     embeds = [];
                 }
 
@@ -66,7 +66,7 @@ export default class ViewHistoryCommand extends Command {
             }
 
             if (embeds.length > 0) {
-                await interaction.followUp({ embeds });
+                await interaction.followUp({ embeds, flags: ["Ephemeral"] });
             }
 
             await interaction.editReply({ content: `Here are the total ${backlog.size} requests in the backlog:` });
