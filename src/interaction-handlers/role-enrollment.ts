@@ -28,43 +28,27 @@ export class ButtonHandler extends InteractionHandler {
             name: "Role Enrollment Button",
             op: "button.roleEnrollment",
         }, async (span: any) => {
-            try {
-                span.setAttribute("user.id", interaction.user.id);
-                span.setAttribute("user.tag", interaction.user.tag);
+            span.setAttribute("user.id", interaction.user.id);
+            span.setAttribute("user.tag", interaction.user.tag);
 
-                const guild: Guild = interaction.guild
-                const roleName: string = interaction.customId.replace("enroll_", "")
-                const member: GuildMember = guild.members.cache.get(interaction.user.id)
+            const guild: Guild = interaction.guild
+            const roleName: string = interaction.customId.replace("enroll_", "")
+            const member: GuildMember = guild.members.cache.get(interaction.user.id)
 
-                const role: Role = interaction.guild.roles.cache.find(
-                    (role) => role.name === roleName
-                );
+            const role: Role = interaction.guild.roles.cache.find(
+                (role) => role.name === roleName
+            );
 
-                if (!role) {
-                    return interaction.editReply({ content: `Role "${roleName}" was not found in ${guild.name}`, })
-                }
+            if (!role) {
+                return interaction.editReply({ content: `Role "${roleName}" was not found in ${guild.name}`, })
+            }
 
-                const userHasRole = member.roles.cache.some(role => role.name === roleName)
+            const userHasRole = member.roles.cache.some(role => role.name === roleName)
 
-                if (userHasRole) {
-                    await member.roles.remove(role);
+            if (userHasRole) {
+                await member.roles.remove(role);
 
-                    Sentry.metrics.count("role_enrollment.removals", 1, {
-                        attributes: {
-                            "role.name": roleName,
-                            "guild.id": guild.id,
-                            "guild.name": guild.name,
-                            "user.id": interaction.user.id,
-                            "user.tag": interaction.user.tag
-                        }
-                    });
-
-                    return interaction.editReply({ content: `Your role for \"${roleName}\" has been removed.`, })
-                }
-
-                await member.roles.add(role);
-
-                Sentry.metrics.count("role_enrollment.additions", 1, {
+                Sentry.metrics.count("role_enrollment.removals", 1, {
                     attributes: {
                         "role.name": roleName,
                         "guild.id": guild.id,
@@ -74,11 +58,22 @@ export class ButtonHandler extends InteractionHandler {
                     }
                 });
 
-                return interaction.editReply({ content: `Your role for \"${roleName}\" has been added.`, })
+                return interaction.editReply({ content: `Your role for \"${roleName}\" has been removed.`, })
             }
-            catch (error) {
 
-            }
+            await member.roles.add(role);
+
+            Sentry.metrics.count("role_enrollment.additions", 1, {
+                attributes: {
+                    "role.name": roleName,
+                    "guild.id": guild.id,
+                    "guild.name": guild.name,
+                    "user.id": interaction.user.id,
+                    "user.tag": interaction.user.tag
+                }
+            });
+
+            return interaction.editReply({ content: `Your role for \"${roleName}\" has been added.`, })
         });
     }
 }

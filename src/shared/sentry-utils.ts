@@ -9,9 +9,17 @@ export class SentryHelper {
 				return await Sentry.startSpan<Promise<T>>(options, async (span) => {
 					try {
 						await this.logInteraction(interaction, false, span);
-						return await callback(span);
+
+						const result = await callback(span);
+
+						span.setStatus({ code: 1, message: "ok" });
+						span.setAttribute("interaction.result.success", true);
+
+						return result;
 					}
 					catch (error) {
+						span.setAttribute("interaction.result.success", false);
+						span.setAttribute("error.message", (error as Error).message);
 						span.setStatus({ code: 2, message: "internal_error" });
 						Sentry.captureException(error);
 
@@ -52,12 +60,6 @@ export class SentryHelper {
 				span.setAttribute?.(key, value) || span.setData?.(key, value);
 			});
 		}
-
-		// 3. Optional: Add user info to the global Sentry scope
-		// Sentry.setUser({
-		// 	id: interaction.user.id,
-		// 	username: interaction.user.username,
-		// });
 
 		return data;
 	}

@@ -129,284 +129,270 @@ export class ModalHandler extends InteractionHandler {
 				"modal.custom_id": interaction.customId,
 			},
 		}, async (span) => {
-			try {
-				span.setAttribute("user.id", interaction.user.id);
-				span.setAttribute("user.tag", interaction.user.tag);
+			span.setAttribute("user.id", interaction.user.id);
+			span.setAttribute("user.tag", interaction.user.tag);
 
-				span.setAttribute("interaction.id", interaction.id);
-				span.setAttribute("interaction.customId", interaction.customId);
+			span.setAttribute("interaction.id", interaction.id);
+			span.setAttribute("interaction.customId", interaction.customId);
 
-				if (!businessPermit || !businessGroup || !propertiesBefore || !requestedLand || !propertyUse) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "missing_fields");
-					span.setStatus({ code: 2, message: "missing_fields" });
-
-					return interaction.editReply({
-						content: "You did not fill in the field correctly.",
-					});
-				}
-
-				const robloxName: string = SpliceUsername(interaction.user.displayName)
-
-				span.setAttribute("user.robloxName", robloxName);
-				span.setAttribute("property.requested_land_url", requestedLand);
-
-				if (!requestedLand.includes("trello.com/c/")) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "invalid_trello_link");
-					span.setStatus({ code: 2, message: "invalid_trello_link" });
-
-					return interaction.editReply({
-						content: "You did not specify a trello link.",
-					});
-				}
-
-				span.setAttribute("trello.card_url", requestedLand);
-
-				const CardTitle: string[] = requestedLand.split("/c/")
-
-				if (!CardTitle[1]) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "invalid_trello_link_format");
-					span.setStatus({ code: 2, message: "invalid_trello_link_format" });
-
-					return interaction.editReply({
-						content: "You did not specify a trello link.\nPlease use the bug report command if the issue persists.",
-					});
-				}
-
-				const CardID: string = CardTitle[1].split("/")[0]
-				span.setAttribute("trello.card_id", CardID);
-
-				const card_url: string = `https://api.trello.com/1/cards/${CardID}`
-
-				// Fetch Trello Card Data
-				const response = await Sentry.startSpan({
-					name: "Fetch Trello Card Data",
-					op: "axios.trello.fetch_trello_card",
-					attributes: {
-						"trello.card_url": card_url,
-					},
-				}, async (childSpan) => {
-					try {
-						const res = await axios({
-							method: "get",
-							url: card_url + ADDON,
-							headers: {
-								"Accept": "application/json"
-							}
-						});
-
-						childSpan.setStatus({ code: 1 });
-						return res;
-					}
-					catch (error) {
-						childSpan.setStatus({ code: 2, message: "trello_card_fetch_failed" });
-
-						span.setAttribute("command.status", "failed");
-						span.setAttribute("command.status_reason", "trello_card_fetch_failed");
-
-						Sentry.captureException(error);
-
-						await interaction.reply({
-							content: "Unable to fetch Trello card.\nPlease use the bug report command if the issue persists.",
-							flags: ["Ephemeral"],
-						});
-
-						return null;
-					}
-				})
-
-				if (!response?.data?.idList) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "invalid_trello_response");
-					span.setStatus({ code: 2, message: "invalid_trello_response" });
-
-					return interaction.editReply({
-						content: "Unable to fetch Trello card data.\nPlease use the bug report command if the issue persists.",
-					});
-				}
-
-				const District: string = GetDistrictFromID(response.data.idList)
-				span.setAttribute("property.district", District);
-
-				if (!District) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "district_not_found");
-					span.setStatus({ code: 2, message: "district_not_found" });
-
-					return interaction.editReply({
-						content: "Unable to find district.\nPlease use the bug report command if the issue persists.",
-					});
-				}
-
-				const DistrictManagers = await Sentry.startSpan(
-					{ name: "Get District Managers", op: "db.prisma" },
-					async (childSpan) => {
-						try {
-							const managers = await GetManagersFromDistrict(District);
-							childSpan.setStatus({ code: 1 });
-							return managers;
-						} catch (error) {
-							span.setAttribute("command.status", "failed");
-							span.setAttribute("command.status_reason", "district_managers_fetch_failed");
-							span.setStatus({ code: 2, message: "district_managers_fetch_failed" });
-							Sentry.captureException(error);
-
-							await interaction.editReply({
-								content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
-							});
-
-							return null;
-						}
-					}
-				);
-
-				span.setAttribute("district.managers.count", DistrictManagers.length);
-
-				if (DistrictManagers.length == 0) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "no_district_managers");
-					span.setStatus({ code: 2, message: "no_district_managers" });
-
-					return interaction.editReply({
-						content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
-					});
-				}
-
-				const DistrictManager_Discords = DistrictManagers
-					.map((manager) => `<@${manager.DiscordId}>`);
-
-				const DistrictManager_TrelloOutput = DistrictManagers
-					.map((manager) => manager.TrelloId);
-
-				span.setAttribute("district.managers.discords", DistrictManager_Discords.join(", "));
-				span.setAttribute("district.managers.trellos", DistrictManager_TrelloOutput.join(", "));
-
-				const DateS = new Date()
-				const NewCard = await Sentry.startSpan({
-					name: "Publish Trello Card",
-					op: "property.publish_trello_card",
-				}, async (childSpan) => {
-					try {
-						const publishedCard = await PublishCard(robloxName,
-							"#Land Request\n\n" +
-							"---\n\n" +
-							`**Submitted at**: ${DateS.toUTCString()}\n` +
-							`**Submitter**: ${robloxName}\n` +
-							`**Property District**: ${District}\n` +
-							`**Property Number**: ${propertiesBefore}\n\n` +
-							"---\n\n" +
-							`**Business Permit**: ${businessPermit}\n` +
-							`**Business Group**: ${businessGroup}\n` +
-							`**Requested Property**: ${requestedLand}\n\n` +
-							"---\n\n" +
-							`**Property Use**: ${propertyUse}`,
-							Settings.LabelIds[District],
-							DistrictManagers.map((manager) => manager.TrelloId) || null
-						)
-
-						childSpan.setStatus({ code: 1 });
-						childSpan.setAttribute("property.publish_trello_card.status", "success");
-						return publishedCard;
-					}
-					catch (error) {
-						childSpan.setAttribute("property.publish_trello_card.status", "failed");
-						childSpan.setAttribute("property.publish_trello_card.status_reason", "trello_card_publish_failed");
-						childSpan.setAttribute("property.publish_trello_card.error_message", error.toString());
-						span.setAttribute("command.status", "failed");
-						span.setAttribute("command.status_reason", "trello_card_publish_failed");
-						span.setStatus({ code: 2, message: "trello_card_publish_failed" });
-						childSpan.setStatus({ code: 2, message: "trello_card_publish_failed" });
-
-						span.setAttribute("error.message", error);
-						Sentry.captureException(error);
-
-						console.log("Error publishing Trello card:", error);
-
-						await interaction.editReply({
-							content: "There was an error while processing your request.",
-						});
-
-						return null;
-					}
-				});
-
-				if (!NewCard) {
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "trello_card_publish_failed");
-					return;
-				}
-
-				Sentry.metrics.count("property.request.submission", 1, {
-					attributes: {
-						"user.id": interaction.user.id,
-						"user.tag": interaction.user.tag,
-						"property.district": District,
-					}
-				});
-
-				span.setAttribute("trello.new_card_id", NewCard.id);
-				span.setAttribute("trello.new_card_url", NewCard.shortUrl);
-
-				const newEmbed = new EmbedBuilder()
-					.setAuthor({
-						name: interaction.user.tag,
-						iconURL:
-							interaction.user.displayAvatarURL({ extension: "png", size: 512 }),
-					})
-					.setTitle("New Property Request Submission")
-					.addFields(
-						{ name: "Roblox Name", value: robloxName },
-						{ name: "Property District", value: District },
-						{ name: "Requested Land", value: requestedLand },
-						{ name: "Trello Link", value: NewCard.shortUrl },
-					)
-					.setTimestamp()
-					.setColor(global.embeds.embedColors.activity)
-					.setFooter(global.embeds.embedFooter);
-
-				const incomingRequestButton = new ButtonBuilder()
-					.setLabel("Request")
-					.setURL(NewCard.shortUrl)
-					.setStyle(ButtonStyle.Link);
-
-				const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
-
-				span.setAttribute("submission.channel_id", global.ChannelIDs.landSubmissions);
-
-				const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
-				if (!channel) {
-					span.setStatus({ code: 2, message: "land_submissions_channel_not_found" });
-					span.setAttribute("command.status", "failed");
-					span.setAttribute("command.status_reason", "land_submissions_channel_not_found");
-
-					return interaction.editReply({
-						content: "There was an error while processing your request, but it was uploaded to the Trello successfully.\nPlease use the bug report command to report this issue.",
-					});
-				}
-
-				await channel.send({ content: DistrictManager_Discords.join(", "), embeds: [newEmbed], components: [row] });
-
-				span.setAttribute("submission.channel_id", channel.id);
-				span.setAttribute("command.status", "success");
-
-				await interaction.editReply({
-					content: "Your submission was received successfully!",
-				});
-
-				span.setStatus({ code: 1 });
-				span.end();
-			}
-			catch (error) {
-				span.setAttribute("command.status", "error");
-				span.setStatus({ code: 2, message: "unhandled_exception" });
-				Sentry.captureException(error);
+			if (!businessPermit || !businessGroup || !propertiesBefore || !requestedLand || !propertyUse) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "missing_fields");
+				span.setStatus({ code: 2, message: "missing_fields" });
 
 				return interaction.editReply({
-					content: "There was an error while processing your request.",
+					content: "You did not fill in the field correctly.",
 				});
 			}
+
+			const robloxName: string = SpliceUsername(interaction.user.displayName)
+
+			span.setAttribute("user.robloxName", robloxName);
+			span.setAttribute("property.requested_land_url", requestedLand);
+
+			if (!requestedLand.includes("trello.com/c/")) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "invalid_trello_link");
+				span.setStatus({ code: 2, message: "invalid_trello_link" });
+
+				return interaction.editReply({
+					content: "You did not specify a trello link.",
+				});
+			}
+
+			span.setAttribute("trello.card_url", requestedLand);
+
+			const CardTitle: string[] = requestedLand.split("/c/")
+
+			if (!CardTitle[1]) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "invalid_trello_link_format");
+				span.setStatus({ code: 2, message: "invalid_trello_link_format" });
+
+				return interaction.editReply({
+					content: "You did not specify a trello link.\nPlease use the bug report command if the issue persists.",
+				});
+			}
+
+			const CardID: string = CardTitle[1].split("/")[0]
+			span.setAttribute("trello.card_id", CardID);
+
+			const card_url: string = `https://api.trello.com/1/cards/${CardID}`
+
+			// Fetch Trello Card Data
+			const response = await Sentry.startSpan({
+				name: "Fetch Trello Card Data",
+				op: "axios.trello.fetch_trello_card",
+				attributes: {
+					"trello.card_url": card_url,
+				},
+			}, async (childSpan) => {
+				try {
+					const res = await axios({
+						method: "get",
+						url: card_url + ADDON,
+						headers: {
+							"Accept": "application/json"
+						}
+					});
+
+					childSpan.setStatus({ code: 1 });
+					return res;
+				}
+				catch (error) {
+					childSpan.setStatus({ code: 2, message: "trello_card_fetch_failed" });
+
+					span.setAttribute("command.status", "failed");
+					span.setAttribute("command.status_reason", "trello_card_fetch_failed");
+
+					Sentry.captureException(error);
+
+					await interaction.reply({
+						content: "Unable to fetch Trello card.\nPlease use the bug report command if the issue persists.",
+						flags: ["Ephemeral"],
+					});
+
+					return null;
+				}
+			})
+
+			if (!response?.data?.idList) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "invalid_trello_response");
+				span.setStatus({ code: 2, message: "invalid_trello_response" });
+
+				return interaction.editReply({
+					content: "Unable to fetch Trello card data.\nPlease use the bug report command if the issue persists.",
+				});
+			}
+
+			const District: string = GetDistrictFromID(response.data.idList)
+			span.setAttribute("property.district", District);
+
+			if (!District) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "district_not_found");
+				span.setStatus({ code: 2, message: "district_not_found" });
+
+				return interaction.editReply({
+					content: "Unable to find district.\nPlease use the bug report command if the issue persists.",
+				});
+			}
+
+			const DistrictManagers = await Sentry.startSpan(
+				{ name: "Get District Managers", op: "db.prisma" },
+				async (childSpan) => {
+					try {
+						const managers = await GetManagersFromDistrict(District);
+						childSpan.setStatus({ code: 1 });
+						return managers;
+					} catch (error) {
+						span.setAttribute("command.status", "failed");
+						span.setAttribute("command.status_reason", "district_managers_fetch_failed");
+						span.setStatus({ code: 2, message: "district_managers_fetch_failed" });
+						Sentry.captureException(error);
+
+						await interaction.editReply({
+							content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
+						});
+
+						return null;
+					}
+				}
+			);
+
+			span.setAttribute("district.managers.count", DistrictManagers.length);
+
+			if (DistrictManagers.length == 0) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "no_district_managers");
+				span.setStatus({ code: 2, message: "no_district_managers" });
+
+				return interaction.editReply({
+					content: "Unable to find district manager.\nPlease use the bug report command if the issue persists.",
+				});
+			}
+
+			const DistrictManager_Discords = DistrictManagers
+				.map((manager) => `<@${manager.DiscordId}>`);
+
+			const DistrictManager_TrelloOutput = DistrictManagers
+				.map((manager) => manager.TrelloId);
+
+			span.setAttribute("district.managers.discords", DistrictManager_Discords.join(", "));
+			span.setAttribute("district.managers.trellos", DistrictManager_TrelloOutput.join(", "));
+
+			const DateS = new Date()
+			const NewCard = await Sentry.startSpan({
+				name: "Publish Trello Card",
+				op: "property.publish_trello_card",
+			}, async (childSpan) => {
+				try {
+					const publishedCard = await PublishCard(robloxName,
+						"#Land Request\n\n" +
+						"---\n\n" +
+						`**Submitted at**: ${DateS.toUTCString()}\n` +
+						`**Submitter**: ${robloxName}\n` +
+						`**Property District**: ${District}\n` +
+						`**Property Number**: ${propertiesBefore}\n\n` +
+						"---\n\n" +
+						`**Business Permit**: ${businessPermit}\n` +
+						`**Business Group**: ${businessGroup}\n` +
+						`**Requested Property**: ${requestedLand}\n\n` +
+						"---\n\n" +
+						`**Property Use**: ${propertyUse}`,
+						Settings.LabelIds[District],
+						DistrictManagers.map((manager) => manager.TrelloId) || null
+					)
+
+					childSpan.setStatus({ code: 1 });
+					childSpan.setAttribute("property.publish_trello_card.status", "success");
+					return publishedCard;
+				}
+				catch (error) {
+					childSpan.setAttribute("property.publish_trello_card.status", "failed");
+					childSpan.setAttribute("property.publish_trello_card.status_reason", "trello_card_publish_failed");
+					childSpan.setAttribute("property.publish_trello_card.error_message", error.toString());
+					span.setAttribute("command.status", "failed");
+					span.setAttribute("command.status_reason", "trello_card_publish_failed");
+					span.setStatus({ code: 2, message: "trello_card_publish_failed" });
+					childSpan.setStatus({ code: 2, message: "trello_card_publish_failed" });
+
+					span.setAttribute("error.message", error);
+					Sentry.captureException(error);
+
+					console.log("Error publishing Trello card:", error);
+
+					await interaction.editReply({
+						content: "There was an error while processing your request.",
+					});
+
+					return null;
+				}
+			});
+
+			if (!NewCard) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "trello_card_publish_failed");
+				return;
+			}
+
+			Sentry.metrics.count("property.request.submission", 1, {
+				attributes: {
+					"user.id": interaction.user.id,
+					"user.tag": interaction.user.tag,
+					"property.district": District,
+				}
+			});
+
+			span.setAttribute("trello.new_card_id", NewCard.id);
+			span.setAttribute("trello.new_card_url", NewCard.shortUrl);
+
+			const newEmbed = new EmbedBuilder()
+				.setAuthor({
+					name: interaction.user.tag,
+					iconURL:
+						interaction.user.displayAvatarURL({ extension: "png", size: 512 }),
+				})
+				.setTitle("New Property Request Submission")
+				.addFields(
+					{ name: "Roblox Name", value: robloxName },
+					{ name: "Property District", value: District },
+					{ name: "Requested Land", value: requestedLand },
+					{ name: "Trello Link", value: NewCard.shortUrl },
+				)
+				.setTimestamp()
+				.setColor(global.embeds.embedColors.activity)
+				.setFooter(global.embeds.embedFooter);
+
+			const incomingRequestButton = new ButtonBuilder()
+				.setLabel("Request")
+				.setURL(NewCard.shortUrl)
+				.setStyle(ButtonStyle.Link);
+
+			const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
+
+			span.setAttribute("submission.channel_id", global.ChannelIDs.landSubmissions);
+
+			const channel = await interaction.client.channels.fetch(global.ChannelIDs.landSubmissions) as TextChannel;
+			if (!channel) {
+				span.setStatus({ code: 2, message: "land_submissions_channel_not_found" });
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "land_submissions_channel_not_found");
+
+				return interaction.editReply({
+					content: "There was an error while processing your request, but it was uploaded to the Trello successfully.\nPlease use the bug report command to report this issue.",
+				});
+			}
+
+			await channel.send({ content: DistrictManager_Discords.join(", "), embeds: [newEmbed], components: [row] });
+
+			span.setAttribute("submission.channel_id", channel.id);
+			span.setAttribute("command.status", "success");
+
+			await interaction.editReply({
+				content: "Your submission was received successfully!",
+			});
 		});
 	}
 }

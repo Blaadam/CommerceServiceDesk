@@ -160,9 +160,6 @@ export class ModalHandler extends InteractionHandler {
                 },
             });
 
-            span.setStatus({ code: 1, message: "submission_successful" });
-            span.setAttribute("modal.success", true);
-
             Sentry.addBreadcrumb({
                 category: "action",
                 message: `Extra dev request sent to channel ${UPLOAD_CHANNEL}`,
