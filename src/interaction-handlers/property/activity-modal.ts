@@ -112,7 +112,7 @@ export class ModalHandler extends InteractionHandler {
 	public async run(interaction: ModalSubmitInteraction) {
 		await interaction.deferReply({ flags: ["Ephemeral"] });
 
-		const businessName: string = interaction.fields.getTextInputValue("businessName");
+		const businessName: string = interaction.fields.getTextInputValue("businessName").replace(/[`_*~\\]/g, "\\$&");
 		const propertyDistrict: readonly string[] = interaction.fields.getStringSelectValues("propertyDistrict");
 		const propertyActivity: string = interaction.fields.getTextInputValue("propertyActivity");
 		const additionalInformation: string = interaction.fields.getTextInputValue("additionalInformation");
