@@ -75,8 +75,7 @@ export class SentryHelper {
 		if (interaction.deferred || interaction.replied) {
 			return interaction.editReply(payload);
 		} else {
-			// Note: ephemeral: true is often preferred for error messages
-			return interaction.reply({ ...payload, ephemeral: true });
+			return interaction.reply({ ...payload, flags: ["Ephemeral"] });
 		}
 	}
 

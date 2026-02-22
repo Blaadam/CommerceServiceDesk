@@ -43,7 +43,7 @@ export class ButtonHandler extends InteractionHandler {
 				span.setAttribute("interaction.response", "Could not extract submitter ID from message content.");
 				span.setStatus({ code: 2 });
 
-				return await interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+				return await interaction.reply({ content: "Could not extract submitter ID from message content.", flags: ["Ephemeral"] });
 			}
 
 			const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);

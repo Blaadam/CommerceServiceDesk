@@ -114,7 +114,7 @@ export class ModalHandler extends InteractionHandler {
 	}
 
 	public async run(interaction: ModalSubmitInteraction) {
-		interaction.deferReply({ ephemeral: true });
+		interaction.deferReply({ flags: ["Ephemeral"] });
 
 		const businessPermit: string = interaction.fields.getTextInputValue("businessPermit");
 		const businessGroup: string = interaction.fields.getTextInputValue("businessGroup");
@@ -274,16 +274,16 @@ export class ModalHandler extends InteractionHandler {
 					});
 				}
 
-				let DistrictManager_DiscordOutput = ""
+				const DistrictManager_Discords = DistrictManagers
+					.map((manager) => `<@${manager.DiscordId}>`);
 
-				for (let row in DistrictManagers) {
-					DistrictManager_DiscordOutput += `<@${DistrictManagers[row].DiscordId}> `
-				}
+				const DistrictManager_TrelloOutput = DistrictManagers
+					.map((manager) => manager.TrelloId);
 
-				span.setAttribute("district.managers.discords", DistrictManager_DiscordOutput);
+				span.setAttribute("district.managers.discords", DistrictManager_Discords.join(", "));
+				span.setAttribute("district.managers.trellos", DistrictManager_TrelloOutput.join(", "));
 
 				const DateS = new Date()
-
 				const NewCard = await Sentry.startSpan({
 					name: "Publish Trello Card",
 					op: "property.publish_trello_card",
@@ -313,8 +313,16 @@ export class ModalHandler extends InteractionHandler {
 					catch (error) {
 						childSpan.setAttribute("property.publish_trello_card.status", "failed");
 						childSpan.setAttribute("property.publish_trello_card.status_reason", "trello_card_publish_failed");
+						childSpan.setAttribute("property.publish_trello_card.error_message", error.toString());
+						span.setAttribute("command.status", "failed");
+						span.setAttribute("command.status_reason", "trello_card_publish_failed");
+						span.setStatus({ code: 2, message: "trello_card_publish_failed" });
 						childSpan.setStatus({ code: 2, message: "trello_card_publish_failed" });
+
+						span.setAttribute("error.message", error);
 						Sentry.captureException(error);
+
+						console.log("Error publishing Trello card:", error);
 
 						await interaction.editReply({
 							content: "There was an error while processing your request.",
@@ -378,7 +386,7 @@ export class ModalHandler extends InteractionHandler {
 					});
 				}
 
-				await channel.send({ content: DistrictManager_DiscordOutput, embeds: [newEmbed], components: [row] });
+				await channel.send({ content: DistrictManager_Discords.join(", "), embeds: [newEmbed], components: [row] });
 
 				span.setAttribute("submission.channel_id", channel.id);
 				span.setAttribute("command.status", "success");

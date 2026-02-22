@@ -26,13 +26,13 @@ export class ButtonHandler extends InteractionHandler {
 		const submitterId: string | undefined = getUserIdFromString(interaction.message.content);
 
 		if (!submitterId) {
-			return interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+			return interaction.reply({ content: "Could not extract submitter ID from message content.", flags: ["Ephemeral"] });
 		}
 
 		const submitter: User | undefined = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
 
 		if (!submitter) {
-			return interaction.reply({ content: "Could not find the submitter from the message mentions.", ephemeral: true });
+			return interaction.reply({ content: "Could not find the submitter from the message mentions.", flags: ["Ephemeral"] });
 		}
 
 		const declineModal = new ModalBuilder()

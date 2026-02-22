@@ -26,7 +26,7 @@ export class ButtonHandler extends InteractionHandler {
     const submitterId: string = getUserIdFromString(interaction.message.content);
 
     if (!submitterId) {
-      return await interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+      return await interaction.reply({ content: "Could not extract submitter ID from message content.", flags: ["Ephemeral"] });
     }
 
     const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
@@ -34,7 +34,7 @@ export class ButtonHandler extends InteractionHandler {
     const dmChannel: DMChannel = await submitter.createDM();
 
     if (!dmChannel) {
-      return interaction.reply({ content: "Could not create DM channel with the submitter.", ephemeral: true });
+      return interaction.reply({ content: "Could not create DM channel with the submitter.", flags: ["Ephemeral"] });
     }
 
     await dmChannel.send({

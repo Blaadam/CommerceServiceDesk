@@ -59,13 +59,13 @@ export class ModalHandler extends InteractionHandler {
         const submitterId: string | undefined = getUserIdFromString(message.content);
         
         if (!submitterId) {
-            return interaction.reply({ content: "Could not extract submitter ID from message content.", ephemeral: true });
+            return interaction.reply({ content: "Could not extract submitter ID from message content.", flags: ["Ephemeral"] });
         }
 
         const submitter: User | undefined = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
 
         if (!submitter) {
-            return interaction.reply({ content: "Could not find the submitter from the message mentions.", ephemeral: true });
+            return interaction.reply({ content: "Could not find the submitter from the message mentions.", flags: ["Ephemeral"] });
         }
 
         const embed: Embed = message.embeds[0];
@@ -74,7 +74,7 @@ export class ModalHandler extends InteractionHandler {
         const dmChannel: DMChannel | undefined = await submitter.createDM();
 
         if (!dmChannel) {
-            return interaction.reply({ content: "Could not create DM channel with the submitter.", ephemeral: true });
+            return interaction.reply({ content: "Could not create DM channel with the submitter.", flags: ["Ephemeral"] });
         }
 
         await dmChannel.send({
