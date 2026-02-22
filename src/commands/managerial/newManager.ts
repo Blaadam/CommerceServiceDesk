@@ -10,6 +10,10 @@ import Sentry from "@sentry/node";
 
 const connection = new databaseConnection();
 
+const TRELLO_KEY = process.env.TRELLO_KEY;
+const TRELLO_TOKEN = process.env.TRELLO_TOKEN;
+const ADDON = `?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`
+
 async function AddManagerToDistrict(
 	managerId: bigint,
 	district: string,
@@ -73,8 +77,8 @@ export default class ViewHistoryCommand extends Command {
 				)
 
 				.addStringOption(option =>
-					option.setName('trelloid')
-						.setDescription('Their unique TrelloID')
+					option.setName('trelloname')
+						.setDescription('Their Trello Name (found in their trello profile url)')
 						.setRequired(true))
 
 				.setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles);
@@ -90,11 +94,52 @@ export default class ViewHistoryCommand extends Command {
 		}, async (span) => {
 			const manager = interaction.options.getUser("manager", true)
 			const district = interaction.options.getString("district", true)
-			const trelloID = interaction.options.getString("trelloid", true)
+			const trelloName = interaction.options.getString("trelloname", true)
 
 			span.setAttribute("manager.id", manager.id);
 			span.setAttribute("district", district);
-			span.setAttribute("trelloID", trelloID);
+			span.setAttribute("manager.trelloName", trelloName);
+
+			const trelloMemberIdResult: string | null = await Sentry.startSpan({
+				name: "Fetch Trello Member ID",
+				op: "trello.api.members.fetch",
+			}, async (childSpan) => {
+				try {
+					const url = `https://api.trello.com/1/members/${trelloName}`
+					childSpan.setAttribute("trello.url", url);
+					const response = await fetch(url + ADDON, {
+						method: 'GET',
+						headers: { "Content-Type": "application/json" }
+					});
+
+					if (!response.ok) {
+						throw new Error(`Trello API responded with status ${response.status}: ${response.statusText}`);
+					}
+
+					const data = await response.json();
+					const trelloMemberId = data.id;
+
+					childSpan.setAttribute("trello.memberId", trelloMemberId);
+					childSpan.setStatus({ code: 1 }); // OK
+
+					return trelloMemberId;
+				}
+				catch (error) {
+					childSpan.setStatus({ code: 2, message: "trello_api_error" });
+					childSpan.setAttribute("error.message", (error as Error).message);
+					Sentry.captureException(error);
+
+					return null;
+				}
+			});
+
+			if (trelloMemberIdResult === null) {
+				return interaction.editReply({
+					content: "Failed to fetch Trello member information. Please check the Trello ID and try again.",
+				});
+			}
+
+			span.setAttribute("manager.trelloId", trelloMemberIdResult);
 
 			const response: string | undefined = await Sentry.startSpan({
 				name: "Add District Manager",
@@ -104,7 +149,7 @@ export default class ViewHistoryCommand extends Command {
 					const result: string = await AddManagerToDistrict(
 						BigInt(manager.id),
 						district,
-						trelloID
+						trelloMemberIdResult
 					);
 
 					span.setAttribute("result.message", result);
