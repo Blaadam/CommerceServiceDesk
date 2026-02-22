@@ -1,4 +1,4 @@
-FROM node:20-slim AS builder
+FROM platformatic/node-caged:25-slim AS builder
 WORKDIR /usr/src/app
 
 COPY package*.json ./

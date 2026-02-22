@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, TextChannel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, NewsChannel, TextChannel } from "discord.js";
 import { promises } from "fs"
 
 const NOTICE_TITLE = "Notice of Deadline for Activity Reports";
@@ -112,8 +112,8 @@ export async function create_deadline_announcement(client: Client) {
     );
 
     const channel = await client.channels.fetch(global.ChannelIDs.deadlineAnnouncements);
-    if (!(channel instanceof TextChannel)) {
-        console.warn("Channel is not a TextChannel");
+    if (!(channel instanceof TextChannel || channel instanceof NewsChannel)) {
+        console.warn("Channel is not a TextChannel or NewsChannel");
         return;
     }
 

@@ -86,4 +86,5 @@ global.GuildIDs = {
 
 //// END OF CONFIGURATION ////
 
-ApplicationCommandRegistries.setDefaultGuildIds(Object.values(global.GuildIDs));
+const defaultGuilds = [...new Set(Object.values(global.GuildIDs).filter((id): id is string => typeof id === 'string'))]
+ApplicationCommandRegistries.setDefaultGuildIds(defaultGuilds);

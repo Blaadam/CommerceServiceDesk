@@ -18,7 +18,7 @@
 	},
 	"scripts": {
 		"write-package-version": "echo \"export const version = \\\"${npm_package_version}\\\";\" > src/version.ts",
-		"start": "bin dist/index.js",
+		"start": "node bin/index.js",
 		"dev": "nodemon src/index.ts",
 		"build": "tsc"
 	},
