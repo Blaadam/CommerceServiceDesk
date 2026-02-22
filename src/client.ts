@@ -61,7 +61,6 @@ global.embeds = {
 };
 
 global.ChannelIDs = {
-	// deadlineAnnouncements: "1445046543316025576",
 	deadlineAnnouncements: "735894843259355294",
 	landSubmissions: "1089647073852403802",
 	devSupportTickets: "1433519872209322196",
@@ -69,6 +68,7 @@ global.ChannelIDs = {
 	rolesChannel: "735894843259355288",
 	blmRevokeLand: "1089647073852403802",
 	publicAds: "735894843259355293",
+	docmAnnouncements: "735894843259355289",
 };
 
 global.RoleIDs = {

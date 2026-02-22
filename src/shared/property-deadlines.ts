@@ -91,13 +91,11 @@ export async function create_deadline_announcement(client: Client) {
             new ButtonBuilder()
                 .setLabel("Submit Notice of Activity")
                 .setStyle(ButtonStyle.Success)
-                .setCustomId("modal-blm_property_activity_modal"))
-        .addComponents(
+                .setCustomId("modal-blm_property_activity_modal"),
             new ButtonBuilder()
                 .setLabel("Land Management Database")
                 .setStyle(ButtonStyle.Link)
-                .setURL("https://trello.com/b/v2fxXXhn/land-management-database"))
-        .addComponents(
+                .setURL("https://trello.com/b/v2fxXXhn/land-management-database"),
             new ButtonBuilder()
                 .setLabel("Contact Support")
                 .setStyle(ButtonStyle.Link)

@@ -1,5 +1,7 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
+    ActionRowBuilder,
+    ButtonBuilder,
     ButtonStyle,
     Channel,
     ContainerBuilder,
@@ -27,8 +29,8 @@ const MESSAGE_PART2: string[] = [
 ]
 
 const DISCLAIMER_TEXT: string[] = [
-    "Commerce Service Desk is a service developed and managed by Nøyra.",
-    "Join our Discord for any inquiries: https://discord.gg/5SdTjEKCdM"
+    "CSD is ran and developed by Nøyra Oy - https://discord.gg/5SdTjEKCdM",
+    "Please make a ticket in our official discord server for any enquires."
 ]
 
 @ApplyOptions<Command.Options>({
@@ -45,7 +47,7 @@ export default class ViewHistoryCommand extends Command {
                 .setName(this.name)
                 .setDescription(this.description)
                 .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-        }, { guildIds: [ "1200919106266861598" ] });
+        }, { guildIds: ["1200919106266861598"] });
     }
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
@@ -87,6 +89,15 @@ export default class ViewHistoryCommand extends Command {
         rolesContainer.addTextDisplayComponents((textDisplay) =>
             textDisplay.setContent(`-# ${DISCLAIMER_TEXT.join("\n-# ")}`)
         );
+
+        const supportButtonRow = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+                new ButtonBuilder()
+                    .setLabel("Contact Support")
+                    .setStyle(ButtonStyle.Link)
+                    .setURL("https://discord.gg/5SdTjEKCdM"));
+
+        rolesContainer.addActionRowComponents(supportButtonRow);
 
         rolesContainer.addTextDisplayComponents((textDisplay) =>
             textDisplay.setContent(
