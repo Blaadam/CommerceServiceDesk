@@ -22,7 +22,7 @@ export class ButtonHandler extends InteractionHandler {
     }
 
     public async run(interaction: ButtonInteraction) {
-        interaction.deferReply({ flags: ["Ephemeral"] })
+        await interaction.deferReply({ flags: ["Ephemeral"] })
 
         return SentryHelper.tracer(interaction, {
             name: "Role Enrollment Button",
