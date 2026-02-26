@@ -114,7 +114,7 @@ export class ModalHandler extends InteractionHandler {
 	}
 
 	public async run(interaction: ModalSubmitInteraction) {
-		interaction.deferReply({ flags: ["Ephemeral"] });
+		await interaction.deferReply({ flags: ["Ephemeral"] });
 
 		const businessPermit: string = interaction.fields.getTextInputValue("businessPermit");
 		const businessGroup: string = interaction.fields.getTextInputValue("businessGroup");

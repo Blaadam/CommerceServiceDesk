@@ -47,8 +47,8 @@ const ACTION_BUTTONS: { name: string; customId: string }[] = [
     { name: "Submit Property File", customId: "modal-dev_submit_property_modal" },
     { name: "Make Extra Request", customId: "modal-dev_request_extra_modal" },
 
-    { name: "New Property Activity", customId: "blm_property_activity_modal" },
-    { name: "New Property Aquisition", customId: "blm_property_request_modal" },
+    { name: "New Property Activity", customId: "modal-blm_property_activity_modal" },
+    { name: "New Property Aquisition", customId: "modal-blm_property_request_modal" },
 ]
 
 @ApplyOptions<Command.Options>({

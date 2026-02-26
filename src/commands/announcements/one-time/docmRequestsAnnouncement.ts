@@ -74,11 +74,11 @@ const ACTION_BUTTONS: ButtonBuilder[] = [
     new ButtonBuilder()
         .setLabel("New Property Aquisition")
         .setStyle(ButtonStyle.Secondary)
-        .setCustomId("blm_property_request_modal"),
+        .setCustomId("modal-blm_property_request_modal"),
     new ButtonBuilder()
         .setLabel("New Property Activity")
         .setStyle(ButtonStyle.Secondary)
-        .setCustomId("blm_property_activity_modal"),
+        .setCustomId("modal-blm_property_activity_modal"),
     new ButtonBuilder()
         .setLabel("Request Property File")
         .setStyle(ButtonStyle.Secondary)
