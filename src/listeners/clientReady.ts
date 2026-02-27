@@ -4,6 +4,7 @@ import Sentry from "@sentry/node";
 import { promises } from "fs"
 import { retrieveBacklog } from "../shared/retrieve-backlog";
 import { checkIsReadyForDeadlineAnnouncement, create_deadline_announcement } from "../shared/property-deadlines";
+import { check_blm_trello_for_updates } from "../shared/trello-listener";
 const path = require('path');
 
 const NODE_ENV: string = process.env.NODE_ENV ?? "development";
@@ -205,5 +206,15 @@ export class ClientReadyListener extends Listener {
 				Sentry.captureException(error);
 			}
 		}, 90_000);
+
+		setInterval(async () => {
+			try {
+				await check_blm_trello_for_updates(client);
+			}
+			catch(error) {
+				this.container.logger.error("Error during Trello check:", error);
+				Sentry.captureException(error);
+			}
+		}, 300_000);
 	}
 }
