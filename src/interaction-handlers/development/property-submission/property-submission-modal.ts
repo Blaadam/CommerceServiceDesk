@@ -45,6 +45,8 @@ export class ModalHandler extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction) {
+        await interaction.deferReply({ flags: ["Ephemeral"] });
+
         const landPermit: string = interaction.fields.getTextInputValue("landPermit");
         const propertyFile = interaction.fields.getUploadedFiles("propertyFile", true).first();
         let bannerImage = interaction.fields.getTextInputValue("bannerImage");
@@ -64,9 +66,8 @@ export class ModalHandler extends InteractionHandler {
             if (propertyFile === null || propertyFile === undefined) {
                 span.setStatus({ code: 3, message: "no_property_file_uploaded" });
                 span.setAttribute("modal.success", false);
-                return interaction.reply({
+                return interaction.editReply({
                     content: `There was an error with your submission. Please ensure you have uploaded a property file.`,
-                    flags: ["Ephemeral"],
                 });
             }
 
@@ -80,9 +81,8 @@ export class ModalHandler extends InteractionHandler {
                 span.setStatus({ code: 3, message: "invalid_property_file_extension" });
                 span.setAttribute("modal.success", false);
 
-                return interaction.reply({
+                return interaction.editReply({
                     content: `The file you have uploaded is not a valid property file. Please ensure you are uploading a .rbxm file.\nYour Extension: \`\`${fileExtension}\`\``,
-                    flags: ["Ephemeral"],
                 });
             }
 
@@ -137,9 +137,8 @@ export class ModalHandler extends InteractionHandler {
                 span.setAttribute("modal.success", false);
                 span.setAttribute("upload.channel.found", false);
 
-                return interaction.reply({
+                return interaction.editReply({
                     content: `There was an error with your submission. Please use the bug report command if this issue persists.\nError: NO_CHANNEL_FOUND`,
-                    flags: ["Ephemeral"],
                 });
             }
 
@@ -181,9 +180,8 @@ export class ModalHandler extends InteractionHandler {
                 },
             });
 
-            return interaction.reply({
+            return interaction.editReply({
                 content: `Your submission was received successfully and is being reviewed by the Firestone Research and Development Team.`,
-                flags: ["Ephemeral"],
             });
         });
     }

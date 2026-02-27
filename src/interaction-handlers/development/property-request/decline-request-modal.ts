@@ -68,13 +68,31 @@ export class ModalHandler extends InteractionHandler {
                 return interaction.editReply({ content: "Upload channel not found or is not a text channel." });
             }
 
-            const message: Message = await channel.messages.fetch(messageId);
+            const message: Message | null = await Sentry.startSpan({
+                name: "Fetch Original Message",
+                op: "discord.fetchMessage",
+                attributes: {
+                    "channel.id": channel.id,
+                    "message.id": messageId,
+                },
+            }, async (fetchSpan) => {
+                try {
+                    return await channel.messages.fetch(messageId);
+                } catch (error) {
+                    fetchSpan.setStatus({ code: 2 });
+                    fetchSpan.setAttribute("error", true);
+                    span.setAttribute("fetchMessage.error", error);
+                    Sentry.captureException(error);
+                    return null;
+                }
+            })
+            
             if (!message) {
                 span.setAttribute("interaction.status", "failed");
-                span.setAttribute("interaction.response", "Original message not found.");
+                span.setAttribute("interaction.response", "Original message not found in the upload channel.");
                 span.setStatus({ code: 2 });
 
-                return interaction.editReply({ content: "Original message not found." });
+                return interaction.editReply({ content: `Original message not found in the upload channel.\n<#${channel.id}>` });
             }
 
             const submitterId: string = getUserIdFromString(interaction.message.content);

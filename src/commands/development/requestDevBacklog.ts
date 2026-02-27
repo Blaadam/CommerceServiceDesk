@@ -26,7 +26,7 @@ export default class ViewHistoryCommand extends Command {
             command
                 .setName(this.name)
                 .setDescription(this.description);
-        }, { guildIds: [global.GuildIDs.supportServer] });
+        });
     }
 
     public async chatInputRun(interaction: ChatInputCommandInteraction) {
