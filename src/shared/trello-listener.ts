@@ -1,10 +1,10 @@
 import Sentry from "@sentry/node";
-import { ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonStyle, Client, ContainerBuilder } from "discord.js";
+import { ButtonBuilder, ButtonStyle, Client, ContainerBuilder } from "discord.js";
 import { promises } from "fs";
 
 const BLM_TRELLO_BOARD_ID = "v2fxXXhn";
 const AWAITING_APPROVAL_LIST_ID = "642e6160c9c885fea1ce3569";
-const CHANNEL_ID_TO_MESSAGE = "1433519872209322196";
+const CHANNEL_ID_TO_MESSAGE = global.ChannelIDs.landSubmissions;
 
 const BLM_PENDING_REQUESTS_FILE = '/app/data/blm_pending_requests.json';
 
@@ -20,7 +20,7 @@ type Card = {
 
 const NOTICE_TITLE = "Pending Property Requests Backlog";
 const NOTICE_DESCRIPTION = `
-Dear <@&${global.RoleIDs.blmLeadership}>,
+Dear <@&${global.RoleIDs.docm_blm_leadership}>,
 
 This is an update regarding the current backlog of pending property requests on the Land Management board. We have identified **FORMAT_NUMBER_OF_REQUESTS** pending requests that require your attention.
 
@@ -114,6 +114,14 @@ export async function check_blm_trello_for_updates(client: Client) {
             return;
         }
 
+        if (newPendingRequests.length === 0) {
+            span.setStatus({ code: 1, message: "No pending requests after filtering" });
+            console.log("No pending requests after filtering");
+            
+            await setFileData([]);
+            return;
+        }
+
         span.setAttribute("trello.pending.requests.count", newPendingRequests.length);
 
         const channel = await client.channels.fetch(CHANNEL_ID_TO_MESSAGE);
@@ -124,6 +132,9 @@ export async function check_blm_trello_for_updates(client: Client) {
         }
 
         const updateContainer = new ContainerBuilder()
+            .addTextDisplayComponents((textDisplay) =>
+                textDisplay
+                    .setContent(`# ${NOTICE_TITLE}`))
             .addTextDisplayComponents((textDisplay) =>
                 textDisplay
                     .setContent(NOTICE_DESCRIPTION.replace("FORMAT_NUMBER_OF_REQUESTS", `${newPendingRequests.length}`))
