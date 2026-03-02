@@ -89,11 +89,11 @@ async function logWeek(usersMessaged: User[]) {
 }
 
 const SEARCH_ROLE_IDS = [
-	// global.RoleIDs.v2Devs,
-	// global.RoleIDs.docm_fsLeadership,
-	// global.RoleIDs.docm_fsDeveloper,
-	// global.RoleIDs.noyra_seniorMgmt,
-	"1200919816811331807" // Noyra CTO
+	global.RoleIDs.v2Devs,
+	global.RoleIDs.docm_fsLeadership,
+	global.RoleIDs.docm_fsDeveloper,
+	global.RoleIDs.noyra_seniorMgmt,
+	// "1200919816811331807" // Noyra CTO
 ]
 
 async function runWeeklyCheck(client: Client, container: Container) {
@@ -153,6 +153,11 @@ async function runWeeklyCheck(client: Client, container: Container) {
 	for (const user of uniqueUsersToMessage) {
 		try {
 			const dmChannel: DMChannel = user.dmChannel ?? await user.createDM();
+			if (!dmChannel || !dmChannel.isSendable()) {
+				container.logger.warn(`Cannot send DM to ${user.tag}, skipping.`);
+				continue;
+			}
+			
 			await dmChannel.send({
 				components: [messageContainer],
 				flags: ["IsComponentsV2"]

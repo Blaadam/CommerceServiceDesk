@@ -33,7 +33,7 @@ async function CommentOnTrelloCardID(cardId: string, comment: string, span?: Sen
 
 	const response = await axios({
 		"method": 'post',
-		"url": url+ADDON,
+		"url": url + ADDON,
 		data: {
 			"text": comment
 		},
@@ -65,12 +65,31 @@ async function FindTrelloCardFromName(query: string, span?: Sentry.Span) {
 
 	if (response.data.cards.length == 0) return null
 
-	// find first card that isnt archived
-	let card
+	// find first card that isnt archived and matches query (fuzzy match)
+	let card: typeof response.data.cards[0] | undefined
+	const queryTerms = query.trim().toLowerCase().split(/\s+/);
+	const optionalMatch = query.match(/\((\d+)\)/);
+	const optionalNumber = optionalMatch ? parseInt(optionalMatch[1]) : null;
+	
 	for (let i = 0; i < response.data.cards.length; i++) {
-		if (response.data.cards[i].idList == ACTIVE_LIST_ID && !response.data.cards[i].closed) {
-			card = response.data.cards[i]
-			break;
+		const cardName = response.data.cards[i].name.toLowerCase();
+		const cardHasNumber = /\((\d+)\)/.test(response.data.cards[i].name);
+		
+		if (response.data.cards[i].idList == ACTIVE_LIST_ID && 
+			!response.data.cards[i].closed &&
+			queryTerms.some(term => cardName.includes(term))) {
+			
+			// If query specifies number, match it exactly
+			if (optionalNumber !== null) {
+				if (cardHasNumber && response.data.cards[i].name.includes(`(${optionalNumber})`)) {
+					card = response.data.cards[i]
+					break;
+				}
+			} else if (!cardHasNumber) {
+				// If no number specified in query, prefer cards without numbers
+				card = response.data.cards[i]
+				break;
+			}
 		}
 	}
 
@@ -134,7 +153,7 @@ export class ModalHandler extends InteractionHandler {
 				});
 			}
 
-			const robloxName: string = SpliceUsername(interaction.user.displayName);
+			const robloxName: string = SpliceUsername(interaction.user.username);
 			span.setAttribute("user.roblox_name", robloxName);
 			Sentry.logger.info(`Derived roblox name: ${robloxName}`);
 

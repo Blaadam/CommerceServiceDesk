@@ -80,9 +80,9 @@ export async function check_blm_trello_for_updates(client: Client) {
         op: "trello_check"
     }, async (span: Sentry.Span) => {
         const fileData = await getFileData();
-        const pendingRequests: string[] = fileData?.pendingRequests || [];
+        const pendingRequests: string[] = fileData?.pendingRequests ?? [];
 
-        span.setAttribute("previous.pending.requests", pendingRequests?.join(",") || "none");
+        span.setAttribute("previous.pending.requests", pendingRequests.join(",") || "none");
         span.setAttribute("previous.check.timestamp", fileData?.timestamp || "none");
 
         const listData = await fetch(`https://api.trello.com/1/lists/${AWAITING_APPROVAL_LIST_ID}/cards?key=${process.env.TRELLO_KEY}&token=${process.env.TRELLO_TOKEN}`)
@@ -105,7 +105,7 @@ export async function check_blm_trello_for_updates(client: Client) {
 
         span.setAttribute("trello.pending.requests.list", newPendingRequests.join(","));
 
-        const hasUpdates = newPendingRequests.some((id: string) => !pendingRequests?.includes(id));
+        const hasUpdates = pendingRequests && newPendingRequests.some((id: string) => !pendingRequests.includes(id));
         span.setAttribute("trello.pending.requests.has_updates", hasUpdates);
 
         if (!hasUpdates) {
