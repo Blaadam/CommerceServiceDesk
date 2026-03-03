@@ -280,3 +280,110 @@ export async function blm_property_request_modal(interaction: CommandInteraction
 
     return await interaction.showModal(modal);
 }
+
+export async function noyra_customer_rating_modal(interaction: CommandInteraction | ButtonInteraction) {
+    const modal = new ModalBuilder()
+        .setCustomId("customer-rating-modal")
+        .setTitle("Nøyra Customer Rating");
+
+    const workProductLabel = new LabelBuilder()
+        .setLabel("Work Product")
+        .setTextInputComponent(
+            new TextInputBuilder()
+                .setCustomId("workProduct")
+                .setPlaceholder("The product or solution you received\ne.g. Commerce Service Desk, [BUSINESS NAME] Interior, etc.")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+        );
+
+    const professionalRatingLabel = new LabelBuilder()
+        .setLabel("How would you rate our professional services?")
+        .setStringSelectMenuComponent(
+            new StringSelectMenuBuilder()
+                .setCustomId("professionalRating")
+                .setPlaceholder("Select a rating from 1 to 10")
+                .addOptions(
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("1")
+                        .setValue("★☆☆☆☆")
+                        .setDescription("Very Unsatisfied"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("2")
+                        .setValue("★★☆☆☆")
+                        .setDescription("Unsatisfied"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("3")
+                        .setValue("★★★☆☆")
+                        .setDescription("Neutral"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("4")
+                        .setValue("★★★★☆")
+                        .setDescription("Satisfied"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("5")
+                        .setValue("★★★★★")
+                        .setDescription("Very Satisfied")
+                )
+        );
+
+    const recommendRatingLabel = new LabelBuilder()
+        .setLabel("How likely are you to recommend us to others?")
+        .setStringSelectMenuComponent(
+            new StringSelectMenuBuilder()
+                .setCustomId("recommendRating")
+                .setPlaceholder("Select a rating from 1 to 10")
+                .addOptions(
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("1")
+                        .setValue("★☆☆☆☆")
+                        .setDescription("Very Unlikely"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("2")
+                        .setValue("★★☆☆☆")
+                        .setDescription("Unlikely"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("3")
+                        .setValue("★★★☆☆")
+                        .setDescription("Neutral"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("4")
+                        .setValue("★★★★☆")
+                        .setDescription("Likely"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("5")
+                        .setValue("★★★★★")
+                        .setDescription("Very Likely")
+                )
+        );
+
+    const workAgainLabel = new LabelBuilder()
+        .setLabel("Would you work with us again?")
+        .setStringSelectMenuComponent(
+            new StringSelectMenuBuilder()
+                .setCustomId("workAgainRating")
+                .setPlaceholder("Yes or No")
+                .addOptions(
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("Yes")
+                        .setValue("Yes")
+                        .setDescription("You would work with us again"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("No")
+                        .setValue("No")
+                        .setDescription("You would not work with us again")
+                )
+        );
+
+    const feedbackLabel = new LabelBuilder()
+        .setLabel("Additional Feedback")
+        .setTextInputComponent(
+            new TextInputBuilder()
+                .setCustomId("additionalFeedback")
+                .setPlaceholder("Default: N/A")
+                .setStyle(TextInputStyle.Paragraph)
+        );
+
+    modal.addLabelComponents(workProductLabel, professionalRatingLabel, recommendRatingLabel, workAgainLabel, feedbackLabel);
+
+    return await interaction.showModal(modal);
+}

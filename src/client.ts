@@ -70,6 +70,7 @@ global.ChannelIDs = {
 	blmRevokeLand: "1089647073852403802",
 	publicAds: "735894843259355293",
 	docmAnnouncements: "735894843259355289",
+	noyraCustomerFeedback: "1478508132497096744",
 };
 
 global.RoleIDs = {
