@@ -71,6 +71,7 @@ global.ChannelIDs = {
 	publicAds: "735894843259355293",
 	docmAnnouncements: "735894843259355289",
 	noyraCustomerFeedback: "1478508132497096744",
+	noyraCustomerTestimonials: "1478839803582873711",
 };
 
 global.RoleIDs = {

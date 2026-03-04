@@ -103,6 +103,10 @@ export class ModalHandler extends InteractionHandler {
                     .setLabel("Accept Feedback")
                     .setStyle(ButtonStyle.Success)
                     .setCustomId(`accept-customer-feedback`),
+                new ButtonBuilder()
+                    .setLabel("Edit Feedback")
+                    .setStyle(ButtonStyle.Secondary)
+                    .setCustomId(`edit-customer-feedback`)
             );
 
         const feedbackChannel = await this.container.client.channels.fetch(global.ChannelIDs.noyraCustomerFeedback);
