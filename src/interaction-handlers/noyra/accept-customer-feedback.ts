@@ -38,6 +38,8 @@ export class ButtonHandler extends InteractionHandler {
 
         await testimonialChannel.send({ components: [customerRatingContainer], flags: ["IsComponentsV2"] });
 
+        await interaction.message.delete();
+
         await interaction.reply({
             content: "The feedback has been accepted and it has been posted in the testimonial channel.",
             flags: ["Ephemeral"],
