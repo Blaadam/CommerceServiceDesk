@@ -48,6 +48,19 @@ const Settings = {
 	}
 }
 
+async function GetPermitDetails(permitLink: string): Promise<{ name: string, desc: string }> {
+	const cardId = permitLink.split("/c/")[1]?.split("/")[0]
+	const response = await axios({
+		method: "get",
+		url: `https://api.trello.com/1/cards/${cardId}${ADDON}`,
+		headers: {
+			"Accept": "application/json"
+		}
+	});
+
+	return response.data
+}
+
 async function PublishCard(Title, Description, Labels, Managers) {
 	const url = `https://api.trello.com/1/cards${ADDON}`
 	const response = await axios({
@@ -117,8 +130,7 @@ export class ModalHandler extends InteractionHandler {
 		await interaction.deferReply({ flags: ["Ephemeral"] });
 
 		const businessPermit: string = interaction.fields.getTextInputValue("businessPermit");
-		const businessGroup: string = interaction.fields.getTextInputValue("businessGroup");
-		const propertiesBefore: string = interaction.fields.getTextInputValue("propertiesBefore");
+		const propertiesBefore: string = interaction.fields.getStringSelectValues("propertiesBefore")?.[0];
 		const requestedLand: string = interaction.fields.getTextInputValue("requestedLand");
 		const propertyUse: string = interaction.fields.getTextInputValue("propertyUse");
 
@@ -135,7 +147,7 @@ export class ModalHandler extends InteractionHandler {
 			span.setAttribute("interaction.id", interaction.id);
 			span.setAttribute("interaction.customId", interaction.customId);
 
-			if (!businessPermit || !businessGroup || !propertiesBefore || !requestedLand || !propertyUse) {
+			if (!businessPermit || !propertiesBefore || !requestedLand || !propertyUse) {
 				span.setAttribute("command.status", "failed");
 				span.setAttribute("command.status_reason", "missing_fields");
 				span.setStatus({ code: 2, message: "missing_fields" });
@@ -144,6 +156,35 @@ export class ModalHandler extends InteractionHandler {
 					content: "You did not fill in the field correctly.",
 				});
 			}
+
+			span.setAttribute("business.permit.url", businessPermit);
+
+			const permitDetails = await Sentry.startSpan({
+				name: "Get Business Permit Details",
+				op: "property.get_permit_details",
+			}, async (childSpan) => {
+				try {
+					const details = await GetPermitDetails(businessPermit);
+					childSpan.setStatus({ code: 1 });
+					return details;
+				} catch (error) {
+					childSpan.setStatus({ code: 2, message: "business_permit_fetch_failed" });
+					span.setAttribute("command.status", "failed");
+					span.setAttribute("command.status_reason", "business_permit_fetch_failed");
+					Sentry.captureException(error);
+
+					return null;
+				}
+			});
+
+			if (!permitDetails) {
+				return interaction.editReply({
+					content: "Unable to fetch business permit details.\nPlease use the bug report command if the issue persists.",
+				});
+			}
+
+			const businessName = permitDetails.name || "Unknown Business Name";
+			span.setAttribute("business.permit.name", businessName);
 
 			const robloxName: string = SpliceUsername(interaction.user.displayName)
 
@@ -291,16 +332,16 @@ export class ModalHandler extends InteractionHandler {
 					const publishedCard = await PublishCard(robloxName,
 						"#Land Request\n\n" +
 						"---\n\n" +
-						`**Submitted at**: ${DateS.toUTCString()}\n` +
-						`**Submitter**: ${robloxName}\n` +
-						`**Property District**: ${District}\n` +
-						`**Property Number**: ${propertiesBefore}\n\n` +
+						`**Submitted at:** ${DateS.toUTCString()}\n` +
+						`**Submitter:** ${robloxName}\n` +
+						`**Property District:** ${District}\n` +
+						`**Property Number:** ${propertiesBefore}\n\n` +
 						"---\n\n" +
-						`**Business Permit**: ${businessPermit}\n` +
-						`**Business Group**: ${businessGroup}\n` +
-						`**Requested Property**: ${requestedLand}\n\n` +
+						`**Business Permit:** ${businessPermit}\n` +
+						`**Business Name:** ${businessName}\n` +
+						`**Requested Property:** ${requestedLand}\n\n` +
 						"---\n\n" +
-						`**Property Use**: ${propertyUse}`,
+						`**Property Use:** ${propertyUse}`,
 						Settings.LabelIds[District],
 						DistrictManagers.map((manager) => manager.TrelloId) || null
 					)
@@ -365,12 +406,22 @@ export class ModalHandler extends InteractionHandler {
 				.setColor(global.embeds.embedColors.activity)
 				.setFooter(global.embeds.embedFooter);
 
-			const incomingRequestButton = new ButtonBuilder()
-				.setLabel("Request")
-				.setURL(NewCard.shortUrl)
-				.setStyle(ButtonStyle.Link);
+			const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+				new ButtonBuilder()
+					.setLabel("Approve Submission")
+					.setCustomId(`property-req-btn-approve_${NewCard.id}`)
+					.setStyle(ButtonStyle.Success),
 
-			const row = new ActionRowBuilder<ButtonBuilder>().addComponents(incomingRequestButton);
+				new ButtonBuilder()
+					.setLabel("Decline Submission")
+					.setCustomId(`property-req-btn-decline_${NewCard.id}`)
+					.setStyle(ButtonStyle.Danger),
+
+				new ButtonBuilder()
+					.setLabel("Property Request")
+					.setURL(NewCard.shortUrl)
+					.setStyle(ButtonStyle.Link)
+			);
 
 			span.setAttribute("submission.channel_id", global.ChannelIDs.landSubmissions);
 

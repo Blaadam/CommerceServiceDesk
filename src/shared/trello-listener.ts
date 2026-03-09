@@ -110,13 +110,13 @@ export async function check_blm_trello_for_updates(client: Client) {
 
         if (!hasUpdates) {
             span.setStatus({ code: 1, message: "No new pending requests" });
-            console.log("No new pending requests");
+            // console.log("No new pending requests");
             return;
         }
 
         if (newPendingRequests.length === 0) {
             span.setStatus({ code: 1, message: "No pending requests after filtering" });
-            console.log("No pending requests after filtering");
+            // console.log("No pending requests after filtering");
             
             await setFileData([]);
             return;

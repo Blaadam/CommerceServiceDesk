@@ -235,22 +235,26 @@ export async function blm_property_request_modal(interaction: CommandInteraction
                 .setStyle(TextInputStyle.Short)
         );
 
-    const businessGroupLabel = new LabelBuilder()
-        .setLabel("Business Group")
-        .setTextInputComponent(
-            new TextInputBuilder()
-                .setCustomId("businessGroup")
-                .setPlaceholder("Firestone Department of Commerce")
-                .setStyle(TextInputStyle.Short)
-        );
-
     const propertiesBeforeLabel = new LabelBuilder()
         .setLabel("Will this be your first or second property?")
-        .setTextInputComponent(
-            new TextInputBuilder()
+        .setStringSelectMenuComponent(
+            new StringSelectMenuBuilder()
                 .setCustomId("propertiesBefore")
-                .setPlaceholder("[FIRST / SECOND]")
-                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder("Select an option")
+                .addOptions(
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("First")
+                        .setValue("First")
+                        .setDescription("This is your first property"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("Second")
+                        .setValue("Second")
+                        .setDescription("This is your second property"),
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel("Third or More")
+                        .setValue("ThirdOrMore")
+                        .setDescription("This is your third or more property")
+                )
         );
 
     const requestedLandLabel = new LabelBuilder()
@@ -272,7 +276,6 @@ export async function blm_property_request_modal(interaction: CommandInteraction
 
     modal.addLabelComponents(
         permitLabel,
-        businessGroupLabel,
         propertiesBeforeLabel,
         requestedLandLabel,
         propertyUseLabel
