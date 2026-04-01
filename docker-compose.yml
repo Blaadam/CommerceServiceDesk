@@ -6,9 +6,9 @@ services:
     networks:
       - noyra_network
     depends_on:
-      - bot
+      - csd-bot
 
-  bot:
+  csd-bot:
     build:
       context: .
       dockerfile: Dockerfile

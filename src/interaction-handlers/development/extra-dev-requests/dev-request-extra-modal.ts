@@ -27,7 +27,7 @@ function SpliceUsername(username: string) {
 }
 
 @ApplyOptions({
-    name: "extra-dev-request-modal",
+    name: "dev-request-extra-modal",
 })
 export class ModalHandler extends InteractionHandler {
     public constructor(
