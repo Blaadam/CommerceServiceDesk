@@ -27,8 +27,13 @@ Sentry.init({
 		Sentry.prismaIntegration(),
 	],
 
-	tracesSampleRate: 1.0,
-	// tracesSampleRate: SAMPLE_RATE,
+	tracesSampler(samplingContext) {
+		const { attributes } = samplingContext;
+		if (attributes?.["http.target"] === "/api/v1/hello") {
+			return 0;
+		}
+		return SAMPLE_RATE;
+	},
 
 	sendDefaultPii: true,
 	enableLogs: true,
