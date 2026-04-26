@@ -12,12 +12,12 @@ const connection = new databaseConnection();
 
 const TRELLO_KEY = process.env.TRELLO_KEY;
 const TRELLO_TOKEN = process.env.TRELLO_TOKEN;
-const ADDON = `?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`
+const ADDON = `?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
 
 async function AddManagerToDistrict(
 	managerId: bigint,
 	district: string,
-	trelloId: string
+	trelloId: string,
 ) {
 	const table = connection.prisma.managerTable;
 
@@ -50,129 +50,180 @@ async function AddManagerToDistrict(
 })
 export default class ViewHistoryCommand extends Command {
 	public override registerApplicationCommands(
-		registry: ApplicationCommandRegistry
+		registry: ApplicationCommandRegistry,
 	) {
 		registry.registerChatInputCommand((command) => {
 			command
 				.setName(this.name)
 				.setDescription(this.description)
 
-				.addUserOption(option =>
+				.addUserOption((option) =>
 					option
-						.setName('manager')
-						.setDescription('The member you would like to assign as a manager')
-						.setRequired(true))
-
-				.addStringOption(option =>
-					option
-						.setName('district')
-						.setDescription('The district you want to view the managers for')
-						.setRequired(true)
-						.addChoices(
-							{ name: 'Redwood', value: 'Redwood' },
-							{ name: 'Arborfield', value: 'Arborfield' },
-							{ name: 'Prominence', value: 'Prominence' },
-							{ name: 'Unincorporated Areas', value: 'Unincorporated' }
+						.setName("manager")
+						.setDescription(
+							"The member you would like to assign as a manager",
 						)
+						.setRequired(true),
 				)
 
-				.addStringOption(option =>
-					option.setName('trelloname')
-						.setDescription('Their Trello Name (found in their trello profile url)')
-						.setRequired(true))
+				.addStringOption((option) =>
+					option
+						.setName("district")
+						.setDescription(
+							"The district you want to view the managers for",
+						)
+						.setRequired(true)
+						.addChoices(
+							{ name: "Redwood", value: "Redwood" },
+							{ name: "Arborfield", value: "Arborfield" },
+							{ name: "Prominence", value: "Prominence" },
+							{
+								name: "Unincorporated Areas",
+								value: "Unincorporated",
+							},
+						),
+				)
+
+				.addStringOption((option) =>
+					option
+						.setName("trelloname")
+						.setDescription(
+							"Their Trello Name (found in their trello profile url)",
+						)
+						.setRequired(true),
+				)
 
 				.setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles);
 		});
 	}
 
 	public async chatInputRun(interaction: ChatInputCommandInteraction) {
-		await interaction.deferReply({ flags: ["Ephemeral"], });
+		await interaction.deferReply({ flags: ["Ephemeral"] });
 
-		return SentryHelper.tracer(interaction, {
-			name: "New Manager Command",
-			op: "command.newManager",
-		}, async (span) => {
-			const manager = interaction.options.getUser("manager", true)
-			const district = interaction.options.getString("district", true)
-			const trelloName = interaction.options.getString("trelloname", true)
+		return SentryHelper.tracer(
+			interaction,
+			{
+				name: "New Manager Command",
+				op: "command.newManager",
+			},
+			async (span) => {
+				const manager = interaction.options.getUser("manager", true);
+				const district = interaction.options.getString(
+					"district",
+					true,
+				);
+				const trelloName = interaction.options.getString(
+					"trelloname",
+					true,
+				);
 
-			span.setAttribute("manager.id", manager.id);
-			span.setAttribute("district", district);
-			span.setAttribute("manager.trelloName", trelloName);
+				span.setAttribute("manager.id", manager.id);
+				span.setAttribute("district", district);
+				span.setAttribute("manager.trelloName", trelloName);
 
-			const trelloMemberIdResult: string | null = await Sentry.startSpan({
-				name: "Fetch Trello Member ID",
-				op: "trello.api.members.fetch",
-			}, async (childSpan) => {
-				try {
-					const url = `https://api.trello.com/1/members/${trelloName}`
-					childSpan.setAttribute("trello.url", url);
-					const response = await fetch(url + ADDON, {
-						method: 'GET',
-						headers: { "Content-Type": "application/json" }
-					});
+				const trelloMemberIdResult: string | null =
+					await Sentry.startSpan(
+						{
+							name: "Fetch Trello Member ID",
+							op: "trello.api.members.fetch",
+						},
+						async (childSpan) => {
+							try {
+								const url = `https://api.trello.com/1/members/${trelloName}`;
+								childSpan.setAttribute("trello.url", url);
+								const response = await fetch(url + ADDON, {
+									method: "GET",
+									headers: {
+										"Content-Type": "application/json",
+									},
+								});
 
-					if (!response.ok) {
-						throw new Error(`Trello API responded with status ${response.status}: ${response.statusText}`);
-					}
+								if (!response.ok) {
+									throw new Error(
+										`Trello API responded with status ${response.status}: ${response.statusText}`,
+									);
+								}
 
-					const data = await response.json();
-					const trelloMemberId = data.id;
+								const data = await response.json();
+								const trelloMemberId = data.id;
 
-					childSpan.setAttribute("trello.memberId", trelloMemberId);
-					childSpan.setStatus({ code: 1 }); // OK
+								childSpan.setAttribute(
+									"trello.memberId",
+									trelloMemberId,
+								);
+								childSpan.setStatus({ code: 1 }); // OK
 
-					return trelloMemberId;
-				}
-				catch (error) {
-					childSpan.setStatus({ code: 2, message: "trello_api_error" });
-					childSpan.setAttribute("error.message", (error as Error).message);
-					Sentry.captureException(error);
+								return trelloMemberId;
+							} catch (error) {
+								childSpan.setStatus({
+									code: 2,
+									message: "trello_api_error",
+								});
+								childSpan.setAttribute(
+									"error.message",
+									(error as Error).message,
+								);
+								Sentry.captureException(error);
 
-					return null;
-				}
-			});
-
-			if (trelloMemberIdResult === null) {
-				return interaction.editReply({
-					content: "Failed to fetch Trello member information. Please check the Trello ID and try again.",
-				});
-			}
-
-			span.setAttribute("manager.trelloId", trelloMemberIdResult);
-
-			const response: string | undefined = await Sentry.startSpan({
-				name: "Add District Manager",
-				op: "db.prisma",
-			}, async (childSpan) => {
-				try {
-					const result: string = await AddManagerToDistrict(
-						BigInt(manager.id),
-						district,
-						trelloMemberIdResult
+								return null;
+							}
+						},
 					);
 
-					span.setAttribute("result.message", result);
-					span.setStatus({ code: 1 }); // OK
-					return result;
+				if (trelloMemberIdResult === null) {
+					return interaction.editReply({
+						content:
+							"Failed to fetch Trello member information. Please check the Trello ID and try again.",
+					});
 				}
-				catch (error) {
-					childSpan.setStatus({ code: 2, message: "internal_error" });
-					span.setStatus({ code: 2, message: "internal_error" });
-					span.setAttribute("error.message", (error as Error).message);
-					Sentry.captureException(error);
 
-					return null
+				span.setAttribute("manager.trelloId", trelloMemberIdResult);
+
+				const response: string | null = await Sentry.startSpan(
+					{
+						name: "Add District Manager",
+						op: "db.prisma",
+					},
+					async (childSpan) => {
+						try {
+							const result: string = await AddManagerToDistrict(
+								BigInt(manager.id),
+								district,
+								trelloMemberIdResult,
+							);
+
+							span.setAttribute("result.message", result);
+							span.setStatus({ code: 1 }); // OK
+							return result;
+						} catch (error) {
+							childSpan.setStatus({
+								code: 2,
+								message: "internal_error",
+							});
+							span.setStatus({
+								code: 2,
+								message: "internal_error",
+							});
+							span.setAttribute(
+								"error.message",
+								(error as Error).message,
+							);
+							Sentry.captureException(error);
+
+							return null;
+						}
+					},
+				);
+
+				if (response === null) {
+					return interaction.editReply({
+						content:
+							"An unexpected error occurred while processing your request.",
+					});
 				}
-			});
 
-			if (response === null) {
-				return interaction.editReply({
-					content: "An unexpected error occurred while processing your request.",
-				});
-			}
-
-			return interaction.editReply({ content: response });
-		});
+				return interaction.editReply({ content: response });
+			},
+		);
 	}
 }

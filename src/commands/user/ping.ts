@@ -10,23 +10,26 @@ import Sentry from "@sentry/node";
 })
 export default class PingCommand extends Command {
 	public override registerApplicationCommands(
-		registry: ApplicationCommandRegistry
+		registry: ApplicationCommandRegistry,
 	) {
-		registry.registerChatInputCommand((command) => {
-			command.setName(this.name).setDescription(this.description);
-		}, {
-			guildIds: [],
-		});
+		registry.registerChatInputCommand(
+			(command) => {
+				command.setName(this.name).setDescription(this.description);
+			},
+			{
+				guildIds: [],
+			},
+		);
 	}
 
 	public chatInputRun(interaction: ChatInputCommandInteraction) {
 		const ping = this.container.client.ws.ping;
 
-		Sentry.metrics.distribution('command.ping.latency', ping);
+		Sentry.metrics.distribution("command.ping.latency", ping);
 
 		return interaction.reply({
 			content: `Pong! \`${ping}ms\``,
-			flags: ["Ephemeral"]
+			flags: ["Ephemeral"],
 		});
 	}
 }

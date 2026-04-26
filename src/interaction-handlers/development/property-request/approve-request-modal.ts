@@ -1,17 +1,18 @@
 import {
-    InteractionHandler,
-    InteractionHandlerTypes,
+	InteractionHandler,
+	InteractionHandlerTypes,
 } from "@sapphire/framework";
 import {
-    Channel,
-    DMChannel,
-    Embed,
-    EmbedBuilder,
-    Message,
-    Snowflake,
-    TextChannel,
-    User,
-    type ModalSubmitInteraction,
+    APIEmbed,
+	Channel,
+	DMChannel,
+	Embed,
+	EmbedBuilder,
+	Message,
+	Snowflake,
+	TextChannel,
+	User,
+	type ModalSubmitInteraction,
 } from "discord.js";
 
 import { ApplyOptions } from "@sapphire/decorators";
@@ -22,132 +23,205 @@ import Sentry from "@sentry/node";
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
 @ApplyOptions({
-    name: "approve-request-modal",
+	name: "approve-request-modal",
 })
 export class ModalHandler extends InteractionHandler {
-    public constructor(
-        ctx: InteractionHandler.LoaderContext,
-        options: InteractionHandler.Options
-    ) {
-        super(ctx, {
-            ...options,
-            interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
-        });
-    }
+	public constructor(
+		ctx: InteractionHandler.LoaderContext,
+		options: InteractionHandler.Options,
+	) {
+		super(ctx, {
+			...options,
+			interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
+		});
+	}
 
-    public override parse(interaction: ModalSubmitInteraction) {
-        if (!interaction.customId.startsWith(this.name)) {
-            return this.none();
-        }
+	public override parse(interaction: ModalSubmitInteraction) {
+		if (!interaction.customId.startsWith(this.name)) {
+			return this.none();
+		}
 
-        return this.some();
-    }
+		return this.some();
+	}
 
-    public async run(interaction: ModalSubmitInteraction) {
-        await interaction.deferReply({ flags: ["Ephemeral"] });
+	public async run(interaction: ModalSubmitInteraction) {
+		await interaction.deferReply({ flags: ["Ephemeral"] });
 
-        SentryHelper.tracer(interaction, {
-            name: "Approve Property Request Modal",
-            op: "interaction.handler.property-request.approve",
-        }, async (span) => {
-            try {
-                const propertyFile = interaction.fields.getUploadedFiles("propertyFile", true).first();
-                const customId: string = interaction.customId;
-                const messageId: Snowflake = customId.replace("approve-request-modal-", "");
+		SentryHelper.tracer(
+			interaction,
+			{
+				name: "Approve Property Request Modal",
+				op: "interaction.handler.property-request.approve",
+			},
+			async (span) => {
+				try {
+					const propertyFile = interaction.fields
+						.getUploadedFiles("propertyFile", true)
+						.first();
+					const customId: string = interaction.customId;
+					const messageId: Snowflake = customId.replace(
+						"approve-request-modal-",
+						"",
+					);
 
-                span.setAttribute("interaction.messageId", messageId);
-                span.setAttribute("interaction.hasPropertyFile", !!propertyFile);
+					span.setAttribute("interaction.messageId", messageId);
+					span.setAttribute(
+						"interaction.hasPropertyFile",
+						!!propertyFile,
+					);
 
-                const channel: Channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
-                span.setAttribute("interaction.uploadChannelId", channel?.id || "undefined");
+					const channel: Channel | undefined =
+						interaction.client.channels.cache.get(UPLOAD_CHANNEL);
+					span.setAttribute(
+						"interaction.uploadChannelId",
+						channel?.id || "undefined",
+					);
 
-                if (!channel || !(channel instanceof TextChannel)) {
-                    span.setAttribute("interaction.status", "failed");
-                    span.setAttribute("interaction.response", "Upload channel not found or is not a text channel.");
-                    span.setStatus({ code: 2 });
+					if (!channel || !(channel instanceof TextChannel)) {
+						span.setAttribute("interaction.status", "failed");
+						span.setAttribute(
+							"interaction.response",
+							"Upload channel not found or is not a text channel.",
+						);
+						span.setStatus({ code: 2 });
 
-                    return interaction.editReply({ content: "Upload channel not found or is not a text channel." });
-                }
+						return interaction.editReply({
+							content:
+								"Upload channel not found or is not a text channel.",
+						});
+					}
 
-                const message: Message = await channel.messages.fetch(messageId);
-                if (!message) {
-                    span.setAttribute("interaction.status", "failed");
-                    span.setAttribute("interaction.response", "Original message not found.");
-                    span.setStatus({ code: 2 });
+					const message: Message =
+						await channel.messages.fetch(messageId);
+					if (!message) {
+						span.setAttribute("interaction.status", "failed");
+						span.setAttribute(
+							"interaction.response",
+							"Original message not found.",
+						);
+						span.setStatus({ code: 2 });
 
-                    return interaction.editReply({ content: "Original message not found." });
-                }
+						return interaction.editReply({
+							content: "Original message not found.",
+						});
+					}
 
-                const submitterId: string = getUserIdFromString(interaction.message.content);
-                if (!submitterId) {
-                    span.setAttribute("interaction.status", "failed");
-                    span.setAttribute("interaction.response", "Could not extract submitter ID from message content.");
-                    span.setStatus({ code: 2 });
+					const ogMessage: Message | null = interaction.message;
+					if (!ogMessage) {
+						span.setAttribute("interaction.status", "failed");
+						span.setAttribute(
+							"interaction.response",
+							"Original interaction message not found.",
+						);
+						span.setStatus({ code: 2 });
 
-                    return await interaction.editReply({ content: "Could not extract submitter ID from message content." });
-                }
+						return interaction.editReply({
+							content: "Original interaction message not found.",
+						});
+					}
 
-                const submitter: User = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
-                const embed: Embed = message.embeds[0];
-                const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+					const submitterId: string | null = getUserIdFromString(
+						ogMessage.content,
+					);
+					if (!submitterId) {
+						span.setAttribute("interaction.status", "failed");
+						span.setAttribute(
+							"interaction.response",
+							"Could not extract submitter ID from message content.",
+						);
+						span.setStatus({ code: 2 });
 
-                span.setAttribute("interaction.submitterId", submitter.id);
-                span.setAttribute("interaction.landPermit", landPermit);
+						return await interaction.editReply({
+							content:
+								"Could not extract submitter ID from message content.",
+						});
+					}
 
-                const dmChannel: DMChannel | undefined = await submitter.createDM();
+					const submitter: User =
+						interaction.client.users.cache.get(submitterId) ||
+						(await interaction.client.users.fetch(submitterId));
+					const embed: Embed = message.embeds[0];
+					const landPermit: string =
+						embed.fields.find(
+							(field) => field.name === "Land Permit",
+						)?.value || "unknown";
 
-                if (!dmChannel) {
-                    span.setAttribute("interaction.status", "failed");
-                    span.setAttribute("interaction.response", "Could not create DM channel with the submitter.");
-                    span.setStatus({ code: 2 });
+					span.setAttribute("interaction.submitterId", submitter.id);
+					span.setAttribute("interaction.landPermit", landPermit);
 
-                    return await interaction.editReply({ content: "Could not create DM channel with the submitter." });
-                }
+					const dmChannel: DMChannel | undefined =
+						await submitter.createDM();
 
-                await dmChannel.send({
-                    content: `Your property submission has been approved by ${interaction.user.toString()}.`,
-                    embeds: [embed],
-                    files: propertyFile ? [propertyFile] : [],
-                });
+					if (!dmChannel) {
+						span.setAttribute("interaction.status", "failed");
+						span.setAttribute(
+							"interaction.response",
+							"Could not create DM channel with the submitter.",
+						);
+						span.setStatus({ code: 2 });
 
-                span.setAttribute("interaction.status", "success");
-                span.setStatus({ code: 1 });
+						return await interaction.editReply({
+							content:
+								"Could not create DM channel with the submitter.",
+						});
+					}
 
-                const newEmbed = new EmbedBuilder(embed)
-                    .setColor(global.embeds.embedColors.success)
-                    .setFooter({ text: `Approved by ${interaction.user.tag}` })
-                    .setTimestamp();
+					await dmChannel.send({
+						content: `Your property submission has been approved by ${interaction.user.toString()}.`,
+						embeds: [embed],
+						files: propertyFile ? [propertyFile] : [],
+					});
 
-                await message.edit({
-                    content: `This property submission has been approved by ${interaction.user.toString()}.`,
-                    components: [],
-                    embeds: [newEmbed],
-                });
+					span.setAttribute("interaction.status", "success");
+					span.setStatus({ code: 1 });
 
-                Sentry.metrics.count("property.development.request.approved", 1, {
-                    attributes: {
-                        "developer.id": interaction.user.id,
-                        "developer.tag": interaction.user.tag,
+					const newEmbed = new EmbedBuilder(embed as APIEmbed)
+						.setColor(global.embeds.embedColors.success)
+						.setFooter({
+							text: `Approved by ${interaction.user.tag}`,
+						})
+						.setTimestamp();
 
-                        "submitter.id": submitter.id,
-                        "submitter.tag": submitter.tag,
-                    }
-                });
+					await message.edit({
+						content: `This property submission has been approved by ${interaction.user.toString()}.`,
+						components: [],
+						embeds: [newEmbed],
+					});
 
-                return interaction.editReply({
-                    content: `You have approved the property submission for ${landPermit}.`,
-                });
-            }
-            catch (error) {
-                span.setAttribute("interaction.status", "error");
-                span.setAttribute("error.message", (error as Error).message);
-                span.setStatus({ code: 2 });
+					Sentry.metrics.count(
+						"property.development.request.approved",
+						1,
+						{
+							attributes: {
+								"developer.id": interaction.user.id,
+								"developer.tag": interaction.user.tag,
 
-                Sentry.captureException(error, { extra: { interactionData: interaction } });
-                return interaction.editReply({
-                    content: "An error occurred while processing the approval. Please try again later. If this issue persists, please file a bug report."
-                });
-            }
-        });
-    }
+								"submitter.id": submitter.id,
+								"submitter.tag": submitter.tag,
+							},
+						},
+					);
+
+					return interaction.editReply({
+						content: `You have approved the property submission for ${landPermit}.`,
+					});
+				} catch (error) {
+					span.setAttribute("interaction.status", "error");
+					span.setAttribute(
+						"error.message",
+						(error as Error).message,
+					);
+					span.setStatus({ code: 2 });
+
+					Sentry.captureException(error, {
+						extra: { interactionData: interaction },
+					});
+					return interaction.editReply({
+						content:
+							"An error occurred while processing the approval. Please try again later. If this issue persists, please file a bug report.",
+					});
+				}
+			},
+		);
+	}
 }

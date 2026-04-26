@@ -1,13 +1,13 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
-    ButtonBuilder,
-    ButtonStyle,
-    Channel,
-    ContainerBuilder,
-    MessageFlagsBitField,
-    PermissionFlagsBits,
-    TextChannel,
-    type ChatInputCommandInteraction,
+	ButtonBuilder,
+	ButtonStyle,
+	Channel,
+	ContainerBuilder,
+	MessageFlagsBitField,
+	PermissionFlagsBits,
+	TextChannel,
+	type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 
@@ -49,107 +49,113 @@ const MESSAGE = `
 
 -# CSD is ran and developed by Nøyra Oy - https://discord.gg/5SdTjEKCdM
 -# Please make a ticket in our official discord server for any enquires.
-`
+`;
 
 const LINK_BUTTONS: ButtonBuilder[] = [
-    new ButtonBuilder()
-        .setLabel("Permit Database")
-        .setStyle(ButtonStyle.Link)
-        .setURL("https://trello.com/b/r4a8Tw1I/commerce-permit-database"),
-    new ButtonBuilder()
-        .setLabel("Land Management Database")
-        .setStyle(ButtonStyle.Link)
-        .setURL("https://trello.com/b/v2fxXXhn/land-management-database"),
-    new ButtonBuilder()
-        .setLabel("Public Affairs Trello")
-        .setStyle(ButtonStyle.Link)
-        .setURL("https://trello.com/b/EA340Ryc/commerce-public-affairs-office"),
-    new ButtonBuilder()
-        .setLabel("Support Server")
-        .setStyle(ButtonStyle.Link)
-        .setURL("https://discord.com/invite/5SdTjEKCdM"),
-]
+	new ButtonBuilder()
+		.setLabel("Permit Database")
+		.setStyle(ButtonStyle.Link)
+		.setURL("https://trello.com/b/r4a8Tw1I/commerce-permit-database"),
+	new ButtonBuilder()
+		.setLabel("Land Management Database")
+		.setStyle(ButtonStyle.Link)
+		.setURL("https://trello.com/b/v2fxXXhn/land-management-database"),
+	new ButtonBuilder()
+		.setLabel("Public Affairs Trello")
+		.setStyle(ButtonStyle.Link)
+		.setURL("https://trello.com/b/EA340Ryc/commerce-public-affairs-office"),
+	new ButtonBuilder()
+		.setLabel("Support Server")
+		.setStyle(ButtonStyle.Link)
+		.setURL("https://discord.com/invite/5SdTjEKCdM"),
+];
 
 const ACTION_BUTTONS: ButtonBuilder[] = [
-    new ButtonBuilder()
-        .setLabel("New Property Aquisition")
-        .setStyle(ButtonStyle.Secondary)
-        .setCustomId("modal-blm_property_request_modal"),
-    new ButtonBuilder()
-        .setLabel("New Property Activity")
-        .setStyle(ButtonStyle.Secondary)
-        .setCustomId("modal-blm_property_activity_modal"),
-    new ButtonBuilder()
-        .setLabel("Request Property File")
-        .setStyle(ButtonStyle.Secondary)
-        .setCustomId("modal-dev_request_property_modal"),
-    new ButtonBuilder()
-        .setLabel("Submit Property File")
-        .setStyle(ButtonStyle.Secondary)
-        .setCustomId("modal-dev_submit_property_modal"),
-]
+	new ButtonBuilder()
+		.setLabel("New Property Aquisition")
+		.setStyle(ButtonStyle.Secondary)
+		.setCustomId("modal-blm_property_request_modal"),
+	new ButtonBuilder()
+		.setLabel("New Property Activity")
+		.setStyle(ButtonStyle.Secondary)
+		.setCustomId("modal-blm_property_activity_modal"),
+	new ButtonBuilder()
+		.setLabel("Request Property File")
+		.setStyle(ButtonStyle.Secondary)
+		.setCustomId("modal-dev_request_property_modal"),
+	new ButtonBuilder()
+		.setLabel("Submit Property File")
+		.setStyle(ButtonStyle.Secondary)
+		.setCustomId("modal-dev_submit_property_modal"),
+];
 
 @ApplyOptions<Command.Options>({
-    name: "docm-requests-announcement",
-    description: "Create an announcement for developer support tickets",
-    cooldownDelay: 10_000,
+	name: "docm-requests-announcement",
+	description: "Create an announcement for developer support tickets",
+	cooldownDelay: 10_000,
 })
 export default class ViewHistoryCommand extends Command {
-    public override registerApplicationCommands(
-        registry: ApplicationCommandRegistry
-    ) {
-        registry.registerChatInputCommand((command) => {
-            command
-                .setName(this.name)
-                .setDescription(this.description)
-                .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-        }, { guildIds: ["1200919106266861598"] });
-    }
+	public override registerApplicationCommands(
+		registry: ApplicationCommandRegistry,
+	) {
+		registry.registerChatInputCommand(
+			(command) => {
+				command
+					.setName(this.name)
+					.setDescription(this.description)
+					.setDefaultMemberPermissions(
+						PermissionFlagsBits.Administrator,
+					);
+			},
+			{ guildIds: ["1200919106266861598"] },
+		);
+	}
 
-    public async chatInputRun(interaction: ChatInputCommandInteraction) {
-        const ticketContainer = new ContainerBuilder()
-            .setAccentColor(global.embeds.accentColors.default)
-            .addTextDisplayComponents((textDisplay) =>
-                textDisplay.setContent(
-                    `## ${TITLE}`
-                ),
-            );
+	public async chatInputRun(interaction: ChatInputCommandInteraction) {
+		const ticketContainer = new ContainerBuilder()
+			.setAccentColor(global.embeds.accentColors.default)
+			.addTextDisplayComponents((textDisplay) =>
+				textDisplay.setContent(`## ${TITLE}`),
+			);
 
-        ticketContainer.addSeparatorComponents((separator) => separator)
-        ticketContainer.addTextDisplayComponents((textDisplay) =>
-            textDisplay.setContent(MESSAGE)
-        )
+		ticketContainer.addSeparatorComponents((separator) => separator);
+		ticketContainer.addTextDisplayComponents((textDisplay) =>
+			textDisplay.setContent(MESSAGE),
+		);
 
-        ticketContainer.addSeparatorComponents((separator) => separator);
+		ticketContainer.addSeparatorComponents((separator) => separator);
 
-        ticketContainer.addActionRowComponents((actionRow) =>
-            actionRow.addComponents(...LINK_BUTTONS)
-        );
+		ticketContainer.addActionRowComponents((actionRow) =>
+			actionRow.addComponents(...LINK_BUTTONS),
+		);
 
-        ticketContainer.addActionRowComponents((actionRow) =>
-            actionRow.addComponents(...ACTION_BUTTONS)
-        );
+		ticketContainer.addActionRowComponents((actionRow) =>
+			actionRow.addComponents(...ACTION_BUTTONS),
+		);
 
-        ticketContainer.addTextDisplayComponents((textDisplay) =>
-            textDisplay.setContent(
-                `-# Last updated <t:${Math.floor(Date.now() / 1000)}:F>`
-            )
-        );
+		ticketContainer.addTextDisplayComponents((textDisplay) =>
+			textDisplay.setContent(
+				`-# Last updated <t:${Math.floor(Date.now() / 1000)}:F>`,
+			),
+		);
 
-        const channel: Channel = await interaction.client.channels.fetch("735894843548500079");
-        if (!channel || !(channel instanceof TextChannel)) {
-            return interaction.reply({
-                content: "Failed to find the roles announcement channel.",
-                flags: ["Ephemeral"],
-            });
-        }
+		const channel: Channel | null =
+			await interaction.client.channels.fetch("735894843548500079");
+		if (!channel || !(channel instanceof TextChannel)) {
+			return interaction.reply({
+				content: "Failed to find the roles announcement channel.",
+				flags: ["Ephemeral"],
+			});
+		}
 
-        await channel.send({ components: [ticketContainer], flags: MessageFlagsBitField.Flags.IsComponentsV2 });
+		await channel.send({
+			components: [ticketContainer],
+			flags: MessageFlagsBitField.Flags.IsComponentsV2,
+		});
 
-        return interaction.reply({
-            content: "Sent Message",
-            flags: ["Ephemeral"],
-        });
-
-    }
+		return interaction.reply({
+			content: "Sent Message",
+			flags: ["Ephemeral"],
+		});
+	}
 }

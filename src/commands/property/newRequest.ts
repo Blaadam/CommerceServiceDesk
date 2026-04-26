@@ -1,7 +1,5 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
-import {
-	type ChatInputCommandInteraction,
-} from "discord.js";
+import { type ChatInputCommandInteraction } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
 import { blm_property_request_modal } from "../../shared/cross-modals";
 
@@ -12,12 +10,10 @@ import { blm_property_request_modal } from "../../shared/cross-modals";
 })
 export default class ViewHistoryCommand extends Command {
 	public override registerApplicationCommands(
-		registry: ApplicationCommandRegistry
+		registry: ApplicationCommandRegistry,
 	) {
 		registry.registerChatInputCommand((command) => {
-			command
-				.setName(this.name)
-				.setDescription(this.description);
+			command.setName(this.name).setDescription(this.description);
 		});
 	}
 

@@ -1,17 +1,18 @@
 import {
-    InteractionHandler,
-    InteractionHandlerTypes,
+	InteractionHandler,
+	InteractionHandlerTypes,
 } from "@sapphire/framework";
 import {
-    Channel,
-    DMChannel,
-    Embed,
-    EmbedBuilder,
-    Message,
-    Snowflake,
-    TextChannel,
-    User,
-    type ModalSubmitInteraction,
+	APIEmbed,
+	Channel,
+	DMChannel,
+	Embed,
+	EmbedBuilder,
+	Message,
+	Snowflake,
+	TextChannel,
+	User,
+	type ModalSubmitInteraction,
 } from "discord.js";
 import Sentry from "@sentry/node";
 
@@ -21,92 +22,113 @@ import { getUserIdFromString } from "../../../shared/useridFromString";
 const UPLOAD_CHANNEL = global.ChannelIDs.devSupportTickets;
 
 @ApplyOptions({
-    name: "decline-extra-dev-modal",
+	name: "decline-extra-dev-modal",
 })
 export class ModalHandler extends InteractionHandler {
-    public constructor(
-        ctx: InteractionHandler.LoaderContext,
-        options: InteractionHandler.Options
-    ) {
-        super(ctx, {
-            ...options,
-            interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
-        });
-    }
+	public constructor(
+		ctx: InteractionHandler.LoaderContext,
+		options: InteractionHandler.Options,
+	) {
+		super(ctx, {
+			...options,
+			interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
+		});
+	}
 
-    public override parse(interaction: ModalSubmitInteraction) {
-        if (!interaction.customId.startsWith(this.name)) {
-            return this.none();
-        }
+	public override parse(interaction: ModalSubmitInteraction) {
+		if (!interaction.customId.startsWith(this.name)) {
+			return this.none();
+		}
 
-        return this.some();
-    }
+		return this.some();
+	}
 
-    public async run(interaction: ModalSubmitInteraction) {
-        const declineReason: string = interaction.fields.getTextInputValue("declineReason");
+	public async run(interaction: ModalSubmitInteraction) {
+		const declineReason: string =
+			interaction.fields.getTextInputValue("declineReason");
 
-        const customId: string = interaction.customId;
-        const messageId: Snowflake = customId.replace("decline-extra-dev-modal-", "");
+		const customId: string = interaction.customId;
+		const messageId: Snowflake = customId.replace(
+			"decline-extra-dev-modal-",
+			"",
+		);
 
-        const channel: Channel = interaction.client.channels.cache.get(UPLOAD_CHANNEL);
+		const channel: Channel | undefined =
+			interaction.client.channels.cache.get(UPLOAD_CHANNEL);
 
-        if (!channel || !(channel instanceof TextChannel)) {
-            return interaction.editReply({ content: "Upload channel not found or is not a text channel." });
-        }
+		if (!channel || !(channel instanceof TextChannel)) {
+			return interaction.editReply({
+				content: "Upload channel not found or is not a text channel.",
+			});
+		}
 
-        const message: Message = await channel.messages.fetch(messageId);
+		const message: Message = await channel.messages.fetch(messageId);
 
-        const submitterId: string | undefined = getUserIdFromString(message.content);
-        
-        if (!submitterId) {
-            return interaction.reply({ content: "Could not extract submitter ID from message content.", flags: ["Ephemeral"] });
-        }
+		const submitterId: string | null = getUserIdFromString(message.content);
 
-        const submitter: User | undefined = interaction.client.users.cache.get(submitterId) || await interaction.client.users.fetch(submitterId);
+		if (!submitterId) {
+			return interaction.reply({
+				content: "Could not extract submitter ID from message content.",
+				flags: ["Ephemeral"],
+			});
+		}
 
-        if (!submitter) {
-            return interaction.reply({ content: "Could not find the submitter from the message mentions.", flags: ["Ephemeral"] });
-        }
+		const submitter: User | undefined =
+			interaction.client.users.cache.get(submitterId) ||
+			(await interaction.client.users.fetch(submitterId));
 
-        const embed: Embed = message.embeds[0];
-        const landPermit: string = embed.fields.find(field => field.name === "Land Permit")?.value || "unknown";
+		if (!submitter) {
+			return interaction.reply({
+				content:
+					"Could not find the submitter from the message mentions.",
+				flags: ["Ephemeral"],
+			});
+		}
 
-        const dmChannel: DMChannel | undefined = await submitter.createDM();
+		const embed: Embed = message.embeds[0];
+		const landPermit: string =
+			embed.fields.find((field) => field.name === "Land Permit")?.value ||
+			"unknown";
 
-        if (!dmChannel) {
-            return interaction.reply({ content: "Could not create DM channel with the submitter.", flags: ["Ephemeral"] });
-        }
+		const dmChannel: DMChannel | undefined = await submitter.createDM();
 
-        await dmChannel.send({
-            content: `Your property submission has been declined by ${interaction.user.toString()} for the following reason:\n\n${declineReason}`,
-            embeds: [embed],
-        });
+		if (!dmChannel) {
+			return interaction.reply({
+				content: "Could not create DM channel with the submitter.",
+				flags: ["Ephemeral"],
+			});
+		}
 
-        const newEmbed = new EmbedBuilder(embed)
-            .setColor(global.embeds.embedColors.error)
-            .addFields({ name: "Decline Reason", value: declineReason })
-            .setFooter({ text: `Declined by ${interaction.user.tag}` })
-            .setTimestamp();
+		await dmChannel.send({
+			content: `Your property submission has been declined by ${interaction.user.toString()} for the following reason:\n\n${declineReason}`,
+			embeds: [embed],
+		});
 
-        await message.edit({
-            content: `This property submission has been declined by ${interaction.user.toString()}.`,
-            components: [],
-            embeds: [newEmbed],
-        });
+		const newEmbed = new EmbedBuilder(embed as APIEmbed)
+			.setColor(global.embeds.embedColors.error)
+			.addFields({ name: "Decline Reason", value: declineReason })
+			.setFooter({ text: `Declined by ${interaction.user.tag}` })
+			.setTimestamp();
 
-        Sentry.metrics.count("extra.development.submission.declined", 1, {
-            attributes: {
-                "developer.id": interaction.user.id,
-                "developer.tag": interaction.user.tag,
+		await message.edit({
+			content: `This property submission has been declined by ${interaction.user.toString()}.`,
+			components: [],
+			embeds: [newEmbed],
+		});
 
-                "submitter.id": submitter.id,
-                "submitter.tag": submitter.tag,
-            }
-        });
+		Sentry.metrics.count("extra.development.submission.declined", 1, {
+			attributes: {
+				"developer.id": interaction.user.id,
+				"developer.tag": interaction.user.tag,
 
-        return interaction.reply({
-            content: `You have declined the property submission for ${landPermit}.`,
-            flags: ["Ephemeral"],
-        });
-    }
+				"submitter.id": submitter.id,
+				"submitter.tag": submitter.tag,
+			},
+		});
+
+		return interaction.reply({
+			content: `You have declined the property submission for ${landPermit}.`,
+			flags: ["Ephemeral"],
+		});
+	}
 }

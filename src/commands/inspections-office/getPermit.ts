@@ -13,29 +13,40 @@ import { SentryHelper } from "../../shared/sentry-utils.js";
 })
 export default class RetrievePermitCommand extends Command {
 	public override registerApplicationCommands(
-		registry: ApplicationCommandRegistry
+		registry: ApplicationCommandRegistry,
 	) {
 		registry.registerChatInputCommand((command) => {
 			command
 				.setName(this.name)
 				.setDescription(this.description)
-				.addStringOption(option =>
-					option.setName('permit')
-						.setDescription('The business name of the permit to retrieve')
+				.addStringOption((option) =>
+					option
+						.setName("permit")
+						.setDescription(
+							"The business name of the permit to retrieve",
+						)
 						.setRequired(true)
-						.setAutocomplete(true));
+						.setAutocomplete(true),
+				);
 		});
 	}
 
 	public async chatInputRun(interaction: ChatInputCommandInteraction) {
 		await interaction.deferReply({ flags: ["Ephemeral"] });
 
-		return SentryHelper.tracer(interaction, {
-			name: "Retrieve Permit Command",
-			op: "command.retrievePermit",
-		}, async (span: any) => {
-			const permitLink: string = interaction.options.getString('permit');
-			return interaction.editReply(`Here is the permit you requested: ${permitLink}`);
-		});
+		return SentryHelper.tracer(
+			interaction,
+			{
+				name: "Retrieve Permit Command",
+				op: "command.retrievePermit",
+			},
+			async (span: any) => {
+				const permitLink: string | null =
+					interaction.options.getString("permit");
+				return interaction.editReply(
+					`Here is the permit you requested: ${permitLink}`,
+				);
+			},
+		);
 	}
 }

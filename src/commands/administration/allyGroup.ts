@@ -19,9 +19,9 @@ async function FetchCardInfo(cardId: string, span?: Sentry.Span) {
 	span?.setAttribute("trello.fetch_card_url", url);
 
 	const response = await fetch(url + ADDON, {
-		method: 'GET',
-		headers: { "Content-Type": "application/json" }
-	})
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
+	});
 
 	return response.json();
 }
@@ -33,25 +33,38 @@ async function FetchCardInfo(cardId: string, span?: Sentry.Span) {
 })
 export default class ViewHistoryCommand extends Command {
 	public override registerApplicationCommands(
-		registry: ApplicationCommandRegistry
+		registry: ApplicationCommandRegistry,
 	) {
-		registry.registerChatInputCommand((command) => {
-			command
-				.setName(this.name)
-				.setDescription(this.description)
-				.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-				.addStringOption(option =>
-					option.setName('permit')
-						.setDescription('The business name of the permit to retrieve')
-						.setRequired(true)
-						.setAutocomplete(true));
-		}, {
-			guildIds: [],
-		});
+		registry.registerChatInputCommand(
+			(command) => {
+				command
+					.setName(this.name)
+					.setDescription(this.description)
+					.setDefaultMemberPermissions(
+						PermissionFlagsBits.Administrator,
+					)
+					.addStringOption((option) =>
+						option
+							.setName("permit")
+							.setDescription(
+								"The business name of the permit to retrieve",
+							)
+							.setRequired(true)
+							.setAutocomplete(true),
+					);
+			},
+			{
+				guildIds: [],
+			},
+		);
 	}
 
 	public async chatInputRun(interaction: ChatInputCommandInteraction) {
-		return interaction.reply({ content: "This command is currently disabled while roblox doesnt yet support group apply requests under the open cloud API.", flags: ["Ephemeral"] });
+		return interaction.reply({
+			content:
+				"This command is currently disabled while roblox doesnt yet support group apply requests under the open cloud API.",
+			flags: ["Ephemeral"],
+		});
 
 		// await interaction.deferReply({ flags: ["Ephemeral"], });
 
