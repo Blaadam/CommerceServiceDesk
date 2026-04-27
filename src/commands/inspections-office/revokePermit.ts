@@ -1,12 +1,14 @@
 import { Command, ApplicationCommandRegistry } from "@sapphire/framework";
 import {
 	Channel,
+	ContainerBuilder,
 	DMChannel,
 	EmbedBuilder,
 	GuildMember,
 	PermissionFlagsBits,
 	Role,
 	TextChannel,
+	TextDisplayBuilder,
 	type ChatInputCommandInteraction,
 } from "discord.js";
 import { ApplyOptions } from "@sapphire/decorators";
