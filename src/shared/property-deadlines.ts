@@ -31,9 +31,9 @@ const DEADLINE_DAY_OFFSET = 7;
 const MINIMUM_CHECK_THRESHHOLD_DAYS = 2;
 const DEADLINE_CHECK_FILE = '/app/data/blm_deadline.json';
 
-export function getNextDeadline(currentDate: Date): DateObject {
+export function getNextDeadline(currentDate: Date, offsetMonth?: number): DateObject {
     // 1. Get the initial target date (e.g., the last day of the month)
-    const deadlineDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const deadlineDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + (offsetMonth || 0) + 1, 1);
 
     return {
         day: deadlineDay.getDate(),

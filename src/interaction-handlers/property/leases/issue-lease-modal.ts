@@ -115,7 +115,7 @@ export class ModalHandler extends InteractionHandler {
 
 		const successUsers: User[] = [];
 
-		const nextDeadline = getNextDeadline(new Date());
+		const nextDeadline = getNextDeadline(new Date(), 1);
 
 		const deadlineTimestamp = new Date(
 			nextDeadline.year,
