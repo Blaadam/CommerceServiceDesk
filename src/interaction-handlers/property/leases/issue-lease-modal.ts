@@ -141,7 +141,7 @@ Dear ${member},
 
 Congratulations! Your land request has been accepted by the Firestone Bureau of Land Management. Your Property Card can be found [here](${cardInfo.url}).
 
-We appreciate your cooperation throughout the land request process, and we look forward to seeing how you utilize and steward this land. As part of the approval process, we kindly remind you that upon approval, your business has a responsibility to submit an activity report within two months.
+We appreciate your cooperation throughout the land request process, and we look forward to seeing how you utilize and steward this land. As part of the approval process, we kindly remind you that upon approval, your business has a responsibility to submit an activity report within **two cycles**.
 
 **Your Next Property Activity Due Date Is <t:${Math.floor(deadlineTimestamp / 1000)}:F>.**
 
