@@ -76,14 +76,16 @@ export class ModalHandler extends InteractionHandler {
 		const notes = interaction.fields.getTextInputValue(action == "approve" ? "approvalNotes" : "declineNotes") || "N/A";
 
 		return SentryHelper.tracer(interaction, {
-			name: "Property Request Approval Modal Submission",
-			op: "property.request_modal_approve_submission",
+			name: "Property Request Action Modal Submission",
+			op: "property.request_modal_action_submission",
 			attributes: {
 				"modal.custom_id": interaction.customId,
 			},
 		}, async (span) => {
 			span.setAttribute("user.id", interaction.user.id);
 			span.setAttribute("user.tag", interaction.user.tag);
+
+			span.setAttribute("action.type", action);
 
 			span.setAttribute("interaction.id", interaction.id);
 			span.setAttribute("interaction.customId", interaction.customId);
@@ -174,14 +176,24 @@ export class ModalHandler extends InteractionHandler {
 			newEmbed.setColor(action == "approve" ? global.embeds.embedColors.success : global.embeds.embedColors.error);
 			newEmbed.addFields({ name: "Status", value: `${action == "approve" ? "Approved" : "Denied"} by <@${interaction.user.id}>` });
 
-			const newActionRow = ActionRowBuilder.from(message.components[0] as ActionRowBuilder<ButtonBuilder>);
+			const newActionRow = ActionRowBuilder.from(message.components[0] as any);
 			newActionRow.components.forEach(component => {
 				(component as ButtonBuilder).setDisabled(true);
 			});
 
-			await message.edit({ embeds: [newEmbed], components: [newActionRow] });
+			await message.edit({ embeds: [newEmbed], components: [newActionRow as any] });
 
 			const thisManager = managers.find(manager => String(manager.DiscordId) === interaction.user.id);
+
+			if (!thisManager) {
+				span.setAttribute("command.status", "failed");
+				span.setAttribute("command.status_reason", "manager_record_not_found");
+				span.setStatus({ code: 2, message: "manager_record_not_found" });
+
+				return interaction.editReply({
+					content: "There was an error while processing your request.\nPlease use the bug report command to report this issue.",
+				});
+			}
 
 			Sentry.startSpan({
 				name: "MoveCard",

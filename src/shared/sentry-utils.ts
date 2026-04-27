@@ -26,7 +26,7 @@ export class SentryHelper {
 						if (interaction.isRepliable()) {
 							this.interactionReply(
 								interaction as RepliableInteraction,
-								"An unexpected error occurred while processing your request. If this issue persists, please file a bug report."
+								"An unexpected error occurred while processing your request. If this issue persists, please file a bug report.\nError: " + (error as Error).message
 							);
 						}
 
