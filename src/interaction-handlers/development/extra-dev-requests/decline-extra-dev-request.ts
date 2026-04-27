@@ -15,7 +15,7 @@ import {
 import { getUserIdFromString } from "../../../shared/useridFromString";
 
 @ApplyOptions({
-	name: "decline-dev-request-extra",
+	name: "decline-extra-dev-request",
 })
 export class ButtonHandler extends InteractionHandler {
 	public constructor(
