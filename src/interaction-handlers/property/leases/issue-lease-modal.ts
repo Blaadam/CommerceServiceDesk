@@ -137,7 +137,7 @@ export class ModalHandler extends InteractionHandler {
 					new TextDisplayBuilder().setContent(`
 # <:blm:1086413574131421226><:commerce:1177850456114991186> || Business Land Lease Issued
 
-Dear ${member},
+Dear ${businessName},
 
 Congratulations! Your land request has been accepted by the Firestone Bureau of Land Management. Your Property Card can be found [here](${cardInfo.url}).
 
@@ -170,28 +170,7 @@ Firestone Bureau of Land Management`),
 			}
 		}
 
-		const blmChannel: Channel | undefined =
-			interaction.client.channels.cache.get(
-				global.ChannelIDs.blmRevokeLand,
-			);
-		if (!blmChannel || !(blmChannel instanceof TextChannel)) {
-			return interaction.editReply({
-				content: "BLM Channel not found or is not text based.",
-			});
-		}
-
-		const landManagementRole: Role | undefined =
-			interaction.guild?.roles.cache.find(
-				(role) => role.name === "Bureau of Land Management Leadership",
-			);
-		if (!landManagementRole) {
-			return interaction.editReply({
-				content:
-					"`Bureau of Land Management Leadership` Role not found.",
-			});
-		}
-
-		Sentry.metrics.count("blm.leases.revoked", 1, {
+		Sentry.metrics.count("blm.leases.issued", 1, {
 			attributes: {
 				"inspector.id": interaction.user.id,
 				"inspector.tag": interaction.user.tag,
@@ -200,7 +179,7 @@ Firestone Bureau of Land Management`),
 		});
 
 		return interaction.editReply({
-			content: `Lease revocation notices sent to ${successUsers.map((user) => user.tag).join(", ")} successfully!`,
+			content: `Lease issue notices sent to ${successUsers.map((user) => user.tag).join(", ")} for \`${businessName}\` successfully!`,
 		});
 	}
 }

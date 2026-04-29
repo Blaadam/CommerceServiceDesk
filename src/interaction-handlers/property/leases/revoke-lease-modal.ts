@@ -133,7 +133,7 @@ export class ModalHandler extends InteractionHandler {
 					new TextDisplayBuilder().setContent(`
 # <:blm:1086413574131421226><:commerce:1177850456114991186> || Business Land Lease Revocation
 
-Dear ${member},
+Dear ${businessName},
 
 This letter serves as an official notice from the Firestone Bureau of Land Management (BLM) regarding the expiry of your land lease agreement. We regret to inform you that your lease on [${cardInfo.name}](${cardInfo.url}) has expired.
 
@@ -176,17 +176,6 @@ Firestone Bureau of Land Management`),
 			});
 		}
 
-		const landManagementRole: Role | undefined =
-			interaction.guild?.roles.cache.find(
-				(role) => role.name === "Bureau of Land Management Leadership",
-			);
-		if (!landManagementRole) {
-			return interaction.editReply({
-				content:
-					"`Bureau of Land Management Leadership` Role not found.",
-			});
-		}
-
 		Sentry.metrics.count("blm.leases.revoked", 1, {
 			attributes: {
 				"inspector.id": interaction.user.id,
@@ -196,7 +185,7 @@ Firestone Bureau of Land Management`),
 		});
 
 		return interaction.editReply({
-			content: `Lease revocation notices sent to ${successUsers.map((user) => user.tag).join(", ")} successfully!`,
+			content: `Lease revocation notices sent to ${successUsers.map((user) => user.tag).join(", ")} for \`${businessName}\` successfully!`,
 		});
 	}
 }
