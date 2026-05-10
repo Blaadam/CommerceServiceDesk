@@ -5,7 +5,6 @@ import {
 import {
 	ActionRowBuilder,
 	Attachment,
-	AttachmentBuilder,
 	ButtonBuilder,
 	ButtonStyle,
 	Channel,
@@ -15,6 +14,7 @@ import {
 	TextChannel,
 	type ModalSubmitInteraction,
 } from "discord.js";
+import axios from "axios";
 import { ApplyOptions } from "@sapphire/decorators";
 import Sentry from "@sentry/node";
 import { SentryHelper } from "../../../shared/sentry-utils";
@@ -117,18 +117,21 @@ export class ModalHandler extends InteractionHandler {
 					span.setAttribute("modal.success", false);
 				}
 
+				const fileBuffers: { name: string; buffer: Buffer }[] = [];
+
 				for (const [fileName, url] of Object.entries(urls)) {
 					const fileContent: ArrayBuffer = await fetch(url).then(
 						(res) => res.arrayBuffer(),
 					);
-					const fileBuffer: Buffer<ArrayBuffer> =
-						Buffer.from(fileContent);
+					const fileBuffer = Buffer.from(fileContent);
 
 					Sentry.getCurrentScope().addAttachment({
 						filename: fileName,
 						data: fileBuffer,
 						contentType: "application/octet-stream",
 					});
+
+					fileBuffers.push({ name: fileName, buffer: fileBuffer });
 				}
 
 				const embed = new EmbedBuilder()
@@ -177,17 +180,73 @@ export class ModalHandler extends InteractionHandler {
 					});
 				}
 
-				const filesToUpload =
-					propertyFiles?.map((file) =>
-						new AttachmentBuilder(file.url).setName(file.name),
-					) ?? [];
+				try {
+					const embedMessage = await channel.send({
+						content: `New extra dev request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
+						embeds: [embed],
+						components: [actionRow],
+					});
 
-				await channel.send({
-					content: `New extra dev request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
-					embeds: [embed],
-					components: [actionRow],
-					files: filesToUpload,
-				});
+					if (fileBuffers.length > 0) {
+						// discord.js uses undici which drops the socket before sending
+						// multipart payloads — use axios (Node https module) instead.
+						const boundary = `----DiscordFormBoundary${Date.now().toString(16)}`;
+						const CRLF = "\r\n";
+						const payloadJson = JSON.stringify({
+							message_reference: {
+								message_id: embedMessage.id,
+								channel_id: channel.id,
+								fail_if_not_exists: false,
+							},
+						});
+
+						const parts: Buffer[] = [
+							Buffer.from(
+								`--${boundary}${CRLF}` +
+									`Content-Disposition: form-data; name="payload_json"${CRLF}` +
+									`Content-Type: application/json${CRLF}${CRLF}` +
+									`${payloadJson}${CRLF}`,
+							),
+						];
+
+						fileBuffers.forEach(({ name, buffer }, index) => {
+							parts.push(
+								Buffer.from(
+									`--${boundary}${CRLF}` +
+										`Content-Disposition: form-data; name="files[${index}]"; filename="${name}"${CRLF}` +
+										`Content-Type: application/octet-stream${CRLF}${CRLF}`,
+								),
+								buffer,
+								Buffer.from(CRLF),
+							);
+						});
+
+						parts.push(Buffer.from(`--${boundary}--${CRLF}`));
+
+						const body = Buffer.concat(parts);
+
+						await axios.post(
+							`https://discord.com/api/v10/channels/${channel.id}/messages`,
+							body,
+							{
+								headers: {
+									Authorization: `Bot ${interaction.client.token}`,
+									"Content-Type": `multipart/form-data; boundary=${boundary}`,
+									"Content-Length": body.length,
+								},
+							},
+						);
+					}
+				} catch (error) {
+					console.error("Failed to send message:", error);
+					span.setStatus({ code: 2, message: "send_failed" });
+					span.setAttribute("modal.success", false);
+					return interaction.reply({
+						content:
+							"Error sending the submission to the internal channel.",
+						flags: ["Ephemeral"],
+					});
+				}
 
 				Sentry.metrics.count("extra.development.submission", 1, {
 					attributes: {
