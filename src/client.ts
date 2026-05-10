@@ -31,6 +31,9 @@ export default class Client extends SapphireClient {
 				listenOptions: {
 					port: process.env.PORT ? Number(process.env.PORT) : 8003,
 				}
+			},
+			rest: {
+				timeout: 60_000,
 			}
 		});
 	}

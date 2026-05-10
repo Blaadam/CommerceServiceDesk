@@ -4,7 +4,6 @@ import {
 } from "@sapphire/framework";
 import {
 	ActionRowBuilder,
-	AttachmentBuilder,
 	ButtonBuilder,
 	ButtonStyle,
 	Channel,
@@ -12,6 +11,7 @@ import {
 	TextChannel,
 	type ModalSubmitInteraction,
 } from "discord.js";
+import axios from "axios";
 import { ApplyOptions } from "@sapphire/decorators";
 import Sentry from "@sentry/node";
 import { SentryHelper } from "../../../shared/sentry-utils";
@@ -72,7 +72,7 @@ export class ModalHandler extends InteractionHandler {
 				span.setAttribute("rbx.username", rbxUsername);
 				span.setAttribute("land.permit", landPermit);
 
-				if (propertyFile === null || propertyFile === undefined) {
+				if (!propertyFile) {
 					span.setStatus({
 						code: 3,
 						message: "no_property_file_uploaded",
@@ -83,10 +83,8 @@ export class ModalHandler extends InteractionHandler {
 					});
 				}
 
-				const fileName: string = propertyFile.name;
-				const fileExtension: string = fileName.slice(
-					fileName.lastIndexOf("."),
-				);
+				const fileName = propertyFile.name;
+				const fileExtension = fileName.slice(fileName.lastIndexOf("."));
 
 				span.setAttribute("file.name", fileName);
 				span.setAttribute("file.extension", fileExtension);
@@ -97,7 +95,6 @@ export class ModalHandler extends InteractionHandler {
 						message: "invalid_property_file_extension",
 					});
 					span.setAttribute("modal.success", false);
-
 					return interaction.editReply({
 						content: `The file you have uploaded is not a valid property file. Please ensure you are uploading a .rbxm file.\nYour Extension: \`\`${fileExtension}\`\``,
 					});
@@ -160,20 +157,66 @@ export class ModalHandler extends InteractionHandler {
 					span.setStatus({ code: 3, message: "no_channel_found" });
 					span.setAttribute("modal.success", false);
 					span.setAttribute("upload.channel.found", false);
-
 					return interaction.editReply({
 						content: `There was an error with your submission. Please use the bug report command if this issue persists.\nError: NO_CHANNEL_FOUND`,
 					});
 				}
 
-				await channel.send({
-					content: `New property submission request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
-					embeds: [embed],
-					components: [actionRow],
-					files: [
-						new AttachmentBuilder(fileBuffer, { name: fileName }),
-					],
-				});
+				try {
+					const embedMessage = await channel.send({
+						content: `New property submission request by: ${interaction.user.toString()}\n<@&${global.RoleIDs.v2Devs}>`,
+						embeds: [embed],
+						components: [actionRow],
+					});
+
+					// discord.js uses undici which drops the socket before sending
+					// multipart payloads — use axios (Node https module) instead.
+					const boundary = `----DiscordFormBoundary${Date.now().toString(16)}`;
+					const CRLF = "\r\n";
+					const payloadJson = JSON.stringify({
+						message_reference: {
+							message_id: embedMessage.id,
+							channel_id: channel.id,
+							fail_if_not_exists: false,
+						},
+					});
+
+					const body = Buffer.concat([
+						Buffer.from(
+							`--${boundary}${CRLF}` +
+								`Content-Disposition: form-data; name="payload_json"${CRLF}` +
+								`Content-Type: application/json${CRLF}${CRLF}` +
+								`${payloadJson}${CRLF}`,
+						),
+						Buffer.from(
+							`--${boundary}${CRLF}` +
+								`Content-Disposition: form-data; name="files[0]"; filename="${fileName}"${CRLF}` +
+								`Content-Type: application/octet-stream${CRLF}${CRLF}`,
+						),
+						fileBuffer,
+						Buffer.from(`${CRLF}--${boundary}--${CRLF}`),
+					]);
+
+					await axios.post(
+						`https://discord.com/api/v10/channels/${channel.id}/messages`,
+						body,
+						{
+							headers: {
+								Authorization: `Bot ${interaction.client.token}`,
+								"Content-Type": `multipart/form-data; boundary=${boundary}`,
+								"Content-Length": body.length,
+							},
+						},
+					);
+				} catch (error) {
+					console.error("Failed to send message:", error);
+					span.setStatus({ code: 2, message: "send_failed" });
+					span.setAttribute("modal.success", false);
+					return interaction.editReply({
+						content:
+							"Error sending the file to the internal channel.",
+					});
+				}
 
 				Sentry.metrics.count("property.development.submission", 1, {
 					attributes: {
@@ -192,7 +235,7 @@ export class ModalHandler extends InteractionHandler {
 				});
 
 				Sentry.captureMessage(
-					`Property Submission: ${rbxUsername} "${fileName}`,
+					`Property Submission: ${rbxUsername} "${fileName}"`,
 					{
 						level: "info",
 						attributes: {

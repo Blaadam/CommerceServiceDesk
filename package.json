@@ -4,18 +4,18 @@
 	"version": "2.8.2",
 	"dependencies": {
 		"@discordjs/voice": "^0.18.0",
-		"@prisma/client": "^6.18.0",
+		"@prisma/client": "^6.19.3",
 		"@sapphire/decorators": "^6.2.0",
 		"@sapphire/discord.js-utilities": "^7.3.3",
-		"@sapphire/framework": "^5.3.7",
+		"@sapphire/framework": "^5.5.0",
 		"@sapphire/plugin-api": "^8.3.1",
-		"@sentry/node": "^10.32.1",
-		"axios": "^1.12.2",
-		"discord.js": "^14.24.1",
+		"@sentry/node": "^10.51.0",
+		"axios": "^1.15.2",
+		"discord.js": "^14.26.4",
 		"dotenv": "^16.6.1",
-		"mariadb": "^3.4.5",
+		"mariadb": "^3.5.2",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.8.3"
+		"typescript": "^5.9.3"
 	},
 	"scripts": {
 		"write-package-version": "echo \"export const version = \\\"${npm_package_version}\\\";\" > src/version.ts",
@@ -24,9 +24,9 @@
 		"build": "tsc"
 	},
 	"devDependencies": {
-		"@types/node": "^24.0.0",
-		"nodemon": "^3.1.10",
-		"prisma": "^6.10.1"
+		"@types/node": "^24.12.2",
+		"nodemon": "^3.1.14",
+		"prisma": "^6.19.3"
 	},
 	"nodemonConfig": {
 		"watch": [
